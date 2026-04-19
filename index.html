@@ -3,1195 +3,1073 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DIP Quest — Digital Image Processing Adventure</title>
+<title>DIP Quest — Digital Image Processing</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #05050f;
-    --panel: #0a0a1e;
-    --panel2: #0f0f28;
-    --cyan: #00e5ff;
-    --magenta: #ff00c8;
-    --yellow: #ffe000;
-    --green: #00ff88;
-    --red: #ff3355;
-    --white: #e8f0fe;
-    --dim: #4a5275;
-    --glow-c: 0 0 12px #00e5ff, 0 0 30px #00e5ff44;
-    --glow-m: 0 0 12px #ff00c8, 0 0 30px #ff00c844;
-    --glow-g: 0 0 12px #00ff88, 0 0 30px #00ff8844;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--white);font-family:'Rajdhani',sans-serif;overflow-x:hidden;min-height:100vh;}
-
-  /* ─── SCANLINE OVERLAY ─── */
-  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,0.015) 2px,rgba(0,229,255,0.015) 4px);pointer-events:none;z-index:9999;}
-
-  /* ─── STARS BG ─── */
-  #stars{position:fixed;inset:0;z-index:0;overflow:hidden;}
-  .star{position:absolute;border-radius:50%;animation:twinkle var(--d,3s) ease-in-out infinite var(--delay,0s);}
-  @keyframes twinkle{0%,100%{opacity:.2;transform:scale(1);}50%{opacity:1;transform:scale(1.5);}}
-
-  /* ─── LAYOUT ─── */
-  #app{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:20px;}
-
-  /* ─── HEADER ─── */
-  header{text-align:center;padding:40px 20px 30px;position:relative;}
-  .logo{font-family:'Orbitron',monospace;font-size:clamp(2rem,6vw,3.5rem);font-weight:900;letter-spacing:4px;background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--yellow));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 20px #00e5ff66);}
-  .tagline{font-size:1.1rem;color:var(--dim);letter-spacing:3px;margin-top:6px;font-family:'Share Tech Mono',monospace;}
-
-  /* ─── XP BAR ─── */
-  #xp-panel{background:var(--panel);border:1px solid #1a1a3e;border-radius:12px;padding:14px 24px;margin:20px 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
-  .level-badge{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;color:var(--yellow);text-shadow:var(--glow-c);min-width:90px;}
-  .xp-track{flex:1;height:12px;background:#1a1a3e;border-radius:6px;overflow:hidden;min-width:120px;}
-  .xp-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--magenta));border-radius:6px;transition:width 0.8s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--glow-c);}
-  .xp-label{font-family:'Share Tech Mono',monospace;font-size:.85rem;color:var(--cyan);min-width:80px;}
-  .score-display{font-family:'Orbitron',monospace;color:var(--green);font-size:1.1rem;text-shadow:var(--glow-g);}
-  .streak{color:var(--magenta);font-family:'Orbitron',monospace;font-size:.9rem;text-shadow:var(--glow-m);}
-
-  /* ─── NAV TABS ─── */
-  #nav{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0;}
-  .tab-btn{flex:1;min-width:100px;padding:10px 6px;background:var(--panel);border:1px solid #1a1a3e;border-radius:8px;color:var(--dim);font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s;text-align:center;}
-  .tab-btn:hover,.tab-btn.active{background:linear-gradient(135deg,#0a1535,#150a2a);border-color:var(--cyan);color:var(--cyan);text-shadow:var(--glow-c);box-shadow:inset 0 0 20px #00e5ff11;}
-  .tab-btn .tab-icon{display:block;font-size:1.4rem;margin-bottom:2px;}
-
-  /* ─── SECTION ─── */
-  .section{display:none;animation:fadeSlide .5s ease;}
-  .section.active{display:block;}
-  @keyframes fadeSlide{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-
-  /* ─── CARDS ─── */
-  .step-card{background:var(--panel);border:1px solid #1a1a3e;border-radius:16px;padding:28px;margin:16px 0;cursor:pointer;transition:all .4s;position:relative;overflow:hidden;}
-  .step-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent,#00e5ff)11,transparent 60%);opacity:0;transition:opacity .4s;}
-  .step-card:hover::before{opacity:1;}
-  .step-card:hover{border-color:var(--accent,#00e5ff);transform:translateY(-4px);box-shadow:0 8px 40px var(--accent,#00e5ff)22;}
-  .card-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
-  .step-num{font-family:'Orbitron',monospace;font-size:2.5rem;font-weight:900;color:var(--accent,#00e5ff);line-height:1;min-width:60px;text-shadow:0 0 20px var(--accent,#00e5ff);}
-  .step-title{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:700;letter-spacing:2px;color:var(--white);}
-  .step-body{font-size:1.05rem;line-height:1.7;color:#b0b8d0;}
-  .step-badge{position:absolute;top:16px;right:16px;background:var(--accent,#00e5ff);color:#000;font-family:'Orbitron',monospace;font-size:.65rem;padding:4px 10px;border-radius:20px;font-weight:900;letter-spacing:1px;}
-  .step-badge.done{background:var(--green);}
-  .step-badge.locked{background:var(--dim);color:#666;}
-
-  /* ─── CANVAS DEMOS ─── */
-  .demo-wrap{background:#080818;border:1px solid #1a1a3e;border-radius:12px;padding:16px;margin:12px 0;text-align:center;}
-  canvas{border-radius:8px;max-width:100%;}
-  .demo-label{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--cyan);margin-top:8px;letter-spacing:2px;}
-  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0;justify-content:center;}
-  .ctrl-btn{padding:8px 18px;background:transparent;border:1px solid var(--cyan);border-radius:6px;color:var(--cyan);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;transition:all .3s;}
-  .ctrl-btn:hover{background:var(--cyan);color:#000;}
-  .ctrl-btn.active-btn{background:var(--cyan);color:#000;}
-  input[type=range]{accent-color:var(--cyan);width:150px;}
-  .range-label{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--dim);}
-
-  /* ─── QUIZ ─── */
-  .quiz-card{background:var(--panel2);border:1px solid #1a1a3e;border-radius:16px;padding:30px;margin:16px 0;}
-  .quiz-q{font-size:1.2rem;font-weight:600;margin-bottom:20px;color:var(--white);line-height:1.5;}
-  .quiz-opts{display:grid;gap:10px;}
-  .q-opt{padding:14px 20px;background:#0a0a20;border:1px solid #2a2a4e;border-radius:10px;cursor:pointer;font-size:1rem;color:#b0b8d0;transition:all .3s;text-align:left;}
-  .q-opt:hover:not(.disabled){border-color:var(--cyan);color:var(--cyan);background:#0a1525;}
-  .q-opt.correct{border-color:var(--green);background:#0a2015;color:var(--green);animation:pulse-green .5s;}
-  .q-opt.wrong{border-color:var(--red);background:#200a0a;color:var(--red);}
-  .q-opt.disabled{pointer-events:none;}
-  @keyframes pulse-green{0%{transform:scale(1);}50%{transform:scale(1.02);}100%{transform:scale(1);}}
-  .quiz-feedback{margin-top:16px;padding:12px 18px;border-radius:8px;font-size:.95rem;line-height:1.5;}
-  .quiz-feedback.correct{background:#0a2015;border-left:3px solid var(--green);color:var(--green);}
-  .quiz-feedback.wrong{background:#200a0a;border-left:3px solid var(--red);color:#ff8899;}
-  .next-btn{margin-top:14px;padding:12px 28px;background:linear-gradient(135deg,var(--cyan),var(--magenta));border:none;border-radius:8px;color:#000;font-family:'Orbitron',monospace;font-weight:700;font-size:.9rem;cursor:pointer;transition:transform .2s;letter-spacing:1px;}
-  .next-btn:hover{transform:scale(1.05);}
-  #quiz-progress{font-family:'Share Tech Mono',monospace;color:var(--dim);margin-bottom:20px;}
-
-  /* ─── PIPELINE ANIMATION ─── */
-  #pipeline{display:flex;align-items:center;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0;}
-  .pipe-node{background:var(--panel);border:2px solid #1a1a3e;border-radius:12px;padding:14px 18px;text-align:center;font-family:'Orbitron',monospace;font-size:.7rem;letter-spacing:1px;transition:all .5s;cursor:pointer;min-width:90px;}
-  .pipe-node:hover,.pipe-node.lit{border-color:var(--accent,#00e5ff);color:var(--accent,#00e5ff);box-shadow:0 0 20px var(--accent,#00e5ff)44;background:#0a1525;text-shadow:0 0 10px var(--accent,#00e5ff);}
-  .pipe-arrow{color:var(--dim);font-size:1.4rem;animation:arrowPulse 1.5s ease-in-out infinite;}
-  @keyframes arrowPulse{0%,100%{opacity:.3;}50%{opacity:1;color:var(--cyan);}}
-  .pipe-node .pipe-icon{font-size:1.6rem;display:block;margin-bottom:4px;}
-
-  /* ─── TOAST ─── */
-  #toast{position:fixed;bottom:30px;right:30px;z-index:1000;display:flex;flex-direction:column;gap:10px;pointer-events:none;}
-  .toast-msg{background:var(--panel2);border:1px solid var(--cyan);border-radius:10px;padding:12px 20px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:1rem;color:var(--cyan);animation:toastIn .4s ease,toastOut .4s ease 2.5s forwards;min-width:200px;text-shadow:var(--glow-c);}
-  .toast-msg.achievement{border-color:var(--yellow);color:var(--yellow);}
-  @keyframes toastIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
-  @keyframes toastOut{to{opacity:0;transform:translateX(40px);}}
-
-  /* ─── PIXEL PLAYGROUND ─── */
-  #pixel-grid{display:grid;gap:3px;margin:16px auto;width:fit-content;}
-  .px-cell{width:28px;height:28px;border-radius:4px;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid #1a1a3e;}
-  .px-cell:hover{transform:scale(1.3);box-shadow:0 0 12px currentColor;}
-
-  /* ─── FORMULA BOX ─── */
-  .formula-box{background:#060616;border:1px solid var(--cyan);border-radius:10px;padding:16px 24px;font-family:'Share Tech Mono',monospace;font-size:1.1rem;color:var(--cyan);text-align:center;margin:12px 0;text-shadow:var(--glow-c);letter-spacing:2px;}
-
-  /* ─── SCROLLBAR ─── */
-  ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px;}
-
-  /* ─── RESPONSIVE ─── */
-  @media(max-width:600px){.step-title{font-size:1rem;}.logo{font-size:2rem;}}
-
-  /* achievement unlock */
-  .unlock-pop{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:var(--panel2);border:2px solid var(--yellow);border-radius:20px;padding:36px 50px;text-align:center;z-index:2000;transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
-  .unlock-pop.show{transform:translate(-50%,-50%) scale(1);}
-  .unlock-icon{font-size:3.5rem;}
-  .unlock-title{font-family:'Orbitron',monospace;color:var(--yellow);font-size:1.3rem;margin:10px 0 4px;}
-  .unlock-sub{color:var(--dim);font-size:.9rem;}
-  .unlock-close{margin-top:16px;padding:8px 24px;background:var(--yellow);border:none;border-radius:6px;color:#000;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;}
+:root{--bg:#04040e;--panel:#08081c;--p2:#0c0c22;--c:#00e5ff;--m:#ff00c8;--y:#ffe000;--g:#00ff88;--r:#ff3355;--dim:#3a4060;--txt:#c8d4f0;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;overflow-x:hidden;min-height:100vh;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,229,255,.01) 3px,rgba(0,229,255,.01) 4px);pointer-events:none;z-index:9000;}
+#sf{position:fixed;inset:0;z-index:0;}
+#root{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:14px 12px 60px;}
+.logo{font-family:'Orbitron',monospace;font-size:clamp(1.8rem,5.5vw,3rem);font-weight:900;letter-spacing:5px;background:linear-gradient(90deg,var(--c),var(--m),var(--y),var(--g));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:hs 8s linear infinite;}
+@keyframes hs{0%{filter:hue-rotate(0deg);}100%{filter:hue-rotate(360deg);}}
+.sub{font-family:'Share Tech Mono',monospace;font-size:.75rem;color:var(--dim);letter-spacing:4px;margin-top:4px;}
+header{text-align:center;padding:26px 10px 18px;}
+#xpbar{background:var(--panel);border:1px solid #141432;border-radius:12px;padding:11px 18px;margin:12px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.lvl{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:900;color:var(--y);text-shadow:0 0 12px var(--y);min-width:66px;}
+.xtr{flex:1;height:10px;background:#141432;border-radius:5px;overflow:hidden;min-width:90px;}
+.xfill{height:100%;background:linear-gradient(90deg,var(--c),var(--m));border-radius:5px;box-shadow:0 0 12px var(--c);transition:width .9s cubic-bezier(.34,1.56,.64,1);}
+.xl{font-family:'Share Tech Mono',monospace;font-size:.76rem;color:var(--c);}
+.st{font-family:'Orbitron',monospace;font-size:.82rem;}
+#nav{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 14px;}
+.tb{flex:1;min-width:72px;padding:8px 3px 6px;background:var(--panel);border:1px solid #141432;border-radius:9px;color:var(--dim);font-family:'Rajdhani',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .3s;text-align:center;position:relative;overflow:hidden;}
+.tb::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--acc,#00e5ff)16,transparent);opacity:0;transition:opacity .3s;}
+.tb:hover::before,.tb.on::before{opacity:1;}
+.tb:hover,.tb.on{border-color:var(--acc,#00e5ff);color:var(--acc,#00e5ff);box-shadow:0 0 14px var(--acc,#00e5ff)22;}
+.tb .ti{display:block;font-size:1.25rem;margin-bottom:2px;}
+.sec{display:none;animation:fu .4s ease;}
+.sec.on{display:block;}
+@keyframes fu{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--panel);border:1px solid #141432;border-radius:16px;padding:22px;margin:12px 0;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--ca,var(--c)),transparent);animation:shineBar 3s linear infinite;}
+@keyframes shineBar{0%{background-position:-200% 0;}100%{background-position:200% 0;}}
+.card:hover{border-color:var(--ca,var(--c));box-shadow:0 4px 32px var(--ca,var(--c))18;}
+.ch{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.cn{font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;color:var(--ca,var(--c));line-height:1;min-width:48px;text-shadow:0 0 18px var(--ca,var(--c));}
+.ct{font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;letter-spacing:2px;}
+.cb{font-size:.96rem;line-height:1.65;color:#8a94b0;}
+.cb strong{color:var(--ca,var(--c));}
+.cw{background:#050510;border:1px solid #141432;border-radius:10px;padding:10px;margin:10px 0;text-align:center;position:relative;}
+.cw canvas{border-radius:5px;max-width:100%;display:block;margin:0 auto;}
+.cl{font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--c);margin-top:6px;letter-spacing:2px;}
+.ctrl{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:center;margin:8px 0;}
+.btn{padding:7px 15px;background:transparent;border:1px solid var(--ca,var(--c));border-radius:7px;color:var(--ca,var(--c));font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.84rem;cursor:pointer;transition:all .22s;letter-spacing:.5px;position:relative;overflow:hidden;}
+.btn:hover,.btn.act{background:var(--ca,var(--c))22;box-shadow:0 0 14px var(--ca,var(--c))44;}
+.btn:active{transform:scale(.95);}
+.rl{font-family:'Share Tech Mono',monospace;font-size:.74rem;color:var(--dim);}
+input[type=range]{accent-color:var(--ca,var(--c));width:130px;cursor:pointer;}
+.rv{font-family:'Share Tech Mono',monospace;font-size:.76rem;color:var(--ca,var(--c));min-width:32px;}
+.fml{background:#030310;border:1px solid var(--ca,var(--c));border-radius:8px;padding:11px 16px;font-family:'Share Tech Mono',monospace;font-size:.95rem;color:var(--ca,var(--c));text-align:center;margin:9px 0;text-shadow:0 0 8px var(--ca,var(--c))66;letter-spacing:1.5px;overflow:hidden;position:relative;}
+.fml::after{content:'';position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,var(--ca,var(--c))1a,transparent);animation:sh 2.5s linear infinite;}
+@keyframes sh{to{left:200%;}}
+.qcard{background:var(--p2);border:1px solid #141432;border-radius:14px;padding:24px;margin:12px 0;}
+.qq{font-size:1.1rem;font-weight:600;margin-bottom:16px;color:#fff;line-height:1.5;}
+.qopts{display:grid;gap:8px;}
+.qo{padding:12px 16px;background:#060618;border:1px solid #222248;border-radius:9px;cursor:pointer;font-size:.94rem;color:#8a94b0;transition:all .28s;text-align:left;font-family:'Rajdhani',sans-serif;font-weight:600;}
+.qo:hover:not(.dis){border-color:var(--c);color:var(--c);background:#0a1425;}
+.qo.ok{border-color:var(--g)!important;background:#0a1f14;color:var(--g);animation:pop .4s;}
+.qo.no{border-color:var(--r)!important;background:#1f0a0e;color:var(--r);}
+.qo.dis{pointer-events:none;}
+@keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.03);}100%{transform:scale(1);}}
+.qfb{margin-top:12px;padding:11px 14px;border-radius:7px;font-size:.9rem;line-height:1.5;display:none;}
+.qfb.ok{background:#0a1f14;border-left:3px solid var(--g);color:var(--g);}
+.qfb.no{background:#1f0a0e;border-left:3px solid var(--r);color:#ff8899;}
+.nxt{margin-top:10px;padding:10px 24px;background:linear-gradient(135deg,var(--c),var(--m));border:none;border-radius:7px;color:#000;font-family:'Orbitron',monospace;font-weight:700;font-size:.8rem;cursor:pointer;letter-spacing:1px;display:none;transition:transform .2s;}
+.nxt:hover{transform:scale(1.04);}
+#pipe{display:flex;align-items:center;flex-wrap:wrap;gap:5px;justify-content:center;margin:18px 0;}
+.pn{background:var(--panel);border:2px solid #141432;border-radius:10px;padding:10px 12px;text-align:center;font-family:'Orbitron',monospace;font-size:.6rem;letter-spacing:.5px;cursor:pointer;min-width:74px;transition:all .3s;position:relative;overflow:hidden;}
+.pn .pi{display:block;font-size:1.35rem;margin-bottom:2px;}
+.pn::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,var(--pa,var(--c))1a,transparent 70%);opacity:0;transition:opacity .3s;}
+.pn:hover::before,.pn.lit::before{opacity:1;}
+.pn:hover,.pn.lit{border-color:var(--pa,var(--c));color:var(--pa,var(--c));box-shadow:0 0 20px var(--pa,var(--c))44;text-shadow:0 0 8px var(--pa,var(--c));}
+.pa{color:var(--dim);font-size:1.1rem;animation:ar 1.8s ease-in-out infinite;}
+@keyframes ar{0%,100%{opacity:.2;transform:scaleX(1);}50%{opacity:1;color:var(--c);transform:scaleX(1.3);}}
+.ibox{background:var(--p2);border:1px solid #141432;border-radius:12px;padding:18px;margin-top:12px;display:none;animation:fu .4s ease;}
+.ibox h3{font-family:'Orbitron',monospace;color:var(--c);margin-bottom:6px;font-size:.95rem;}
+.ibox p{color:#8a94b0;font-size:.93rem;line-height:1.6;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
+#toast{position:fixed;bottom:22px;right:18px;z-index:8000;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+.tm{background:var(--p2);border:1px solid var(--c);border-radius:9px;padding:9px 16px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.9rem;color:var(--c);animation:tI .32s ease,tO .32s 2.7s ease forwards;min-width:160px;}
+.tm.a{border-color:var(--y);color:var(--y);}
+@keyframes tI{from{opacity:0;transform:translateX(34px);}to{opacity:1;transform:translateX(0);}}
+@keyframes tO{to{opacity:0;transform:translateX(34px);}}
+.apop{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:var(--p2);border:2px solid var(--y);border-radius:18px;padding:30px 40px;text-align:center;z-index:9500;transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+.apop.show{transform:translate(-50%,-50%) scale(1);}
+.apop .ai{font-size:3rem;}
+.apop .at{font-family:'Orbitron',monospace;color:var(--y);font-size:1.1rem;margin:8px 0 3px;}
+.apop .as{color:var(--dim);font-size:.84rem;}
+.apop .ac{margin-top:12px;padding:7px 20px;background:var(--y);border:none;border-radius:6px;color:#000;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;font-size:.8rem;}
+.xpb{position:absolute;top:10px;right:10px;background:var(--g);color:#000;font-family:'Orbitron',monospace;font-size:.58rem;padding:3px 8px;border-radius:16px;font-weight:900;}
+.done{background:var(--g)!important;color:#000!important;}
+@media(max-width:580px){.g2,.g3{grid-template-columns:1fr;}.logo{font-size:1.7rem;}}
 </style>
 </head>
 <body>
-
-<!-- Stars -->
-<div id="stars"></div>
-
-<!-- App -->
-<div id="app">
-  <header>
-    <div class="logo">⚡ DIP QUEST</div>
-    <div class="tagline">// DIGITAL IMAGE PROCESSING — GAMIFIED //</div>
-  </header>
-
-  <!-- XP Bar -->
-  <div id="xp-panel">
-    <div class="level-badge" id="level-badge">LVL 1</div>
-    <div style="display:flex;flex-direction:column;flex:1;gap:4px;">
-      <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
-      <div class="xp-label" id="xp-label">0 / 100 XP</div>
-    </div>
-    <div class="score-display">⚡ <span id="score-val">0</span> pts</div>
-    <div class="streak" id="streak-display">🔥 0 streak</div>
-  </div>
-
-  <!-- Nav -->
-  <div id="nav">
-    <button class="tab-btn active" onclick="showTab('pipeline')"><span class="tab-icon">🔗</span>Pipeline</button>
-    <button class="tab-btn" onclick="showTab('steps')"><span class="tab-icon">📖</span>Learn</button>
-    <button class="tab-btn" onclick="showTab('lab')"><span class="tab-icon">🔬</span>Lab</button>
-    <button class="tab-btn" onclick="showTab('quiz')"><span class="tab-icon">🎯</span>Quiz</button>
-    <button class="tab-btn" onclick="showTab('transform')"><span class="tab-icon">📈</span>Transforms</button>
-  </div>
-
-  <!-- ════ PIPELINE TAB ════ -->
-  <div class="section active" id="tab-pipeline">
-    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">FUNDAMENTAL PIPELINE — CLICK EACH NODE</h2>
-    <p style="color:var(--dim);font-size:.9rem;margin-bottom:16px;">Tap any step to illuminate it and learn what it does in the DIP chain.</p>
-    <div id="pipeline">
-      <div class="pipe-node" style="--accent:#00e5ff" onclick="lightNode(0,this,'Image Acquisition','📷 The very first step — capturing raw image data using cameras or sensors. The captured scene is converted to digital form through SAMPLING (converting continuous to discrete positions) and QUANTIZATION (converting amplitude to discrete levels). No image = no processing!')">
-        <span class="pipe-icon">📷</span>ACQUIRE
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="--accent:#00ff88" onclick="lightNode(1,this,'Image Enhancement','✨ Making images look better for HUMAN perception. Subjective process — what looks good depends on the viewer. Techniques: contrast stretching, image sharpening, histogram equalization. Ex: brightening a dark photograph.')">
-        <span class="pipe-icon">✨</span>ENHANCE
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="--accent:#ff9500" onclick="lightNode(2,this,'Image Restoration','🔧 Recovering the ORIGINAL image from a degraded one — objective process. Uses mathematical & statistical models to remove blur or noise (defocus, motion blur). Unlike enhancement, there is a known ground truth to restore to.')">
-        <span class="pipe-icon">🔧</span>RESTORE
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="--accent:#ff00c8" onclick="lightNode(3,this,'Colour Processing','🎨 Handling images with colour information using models like RGB and CMY. Used in graphics, photography, and video. Each colour component (R,G,B) can be processed separately or together.')">
-        <span class="pipe-icon">🎨</span>COLOUR
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="--accent:#ffe000" onclick="lightNode(4,this,'Image Compression','📦 Reducing data size for storage & transmission. 2 types: LOSSY (JPEG) — data is lost but compression is high; LOSSLESS (PNG, DIVC) — no information lost. Trade-off: file size vs. quality.')">
-        <span class="pipe-icon">📦</span>COMPRESS
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="--accent:#00e5ff" onclick="lightNode(5,this,'Segmentation','🧩 Dividing image into meaningful REGIONS or objects. Simplifies analysis by separating objects from background. Medical example: isolating a tumour from a scan.')">
-        <span class="pipe-icon">🧩</span>SEGMENT
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" style="--accent:#00ff88" onclick="lightNode(6,this,'Object Recognition','🤖 Identifying and labelling objects using stored patterns in a database. Compares image features with known templates. Examples: Face recognition, fingerprint identification.')">
-        <span class="pipe-icon">🤖</span>RECOGNISE
-      </div>
-    </div>
-
-    <div id="pipe-info" style="background:var(--panel2);border:1px solid #1a1a3e;border-radius:14px;padding:24px;margin-top:16px;display:none;">
-      <h3 id="pipe-info-title" style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:10px;font-size:1.1rem;"></h3>
-      <p id="pipe-info-body" style="font-size:1.05rem;line-height:1.7;color:#b0b8d0;"></p>
-    </div>
-
-    <div class="demo-wrap" style="margin-top:24px;">
-      <canvas id="pipe-canvas" width="600" height="90"></canvas>
-      <div class="demo-label">PIPELINE SIGNAL FLOW — ANIMATED</div>
-    </div>
-  </div>
-
-  <!-- ════ LEARN TAB ════ -->
-  <div class="section" id="tab-steps">
-    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">CONCEPT CARDS — UNLOCK AS YOU LEARN</h2>
-
-    <div class="step-card" style="--accent:#00e5ff" onclick="unlockCard(this,0)">
-      <div class="card-header">
-        <div class="step-num">01</div>
-        <div><div class="step-title">IMAGE ACQUISITION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">The Gateway Step</div></div>
-      </div>
-      <div class="step-body">
-        Image acquisition is the <strong style="color:var(--cyan)">first step</strong> in digital image processing. It involves capturing an image using a <strong>camera or sensor</strong>.<br><br>
-        The captured image is converted to digital form through two key operations:<br>
-        • <strong style="color:var(--cyan)">Sampling</strong> — discretizing the spatial coordinates (x,y)<br>
-        • <strong style="color:var(--cyan)">Quantization</strong> — discretizing the intensity/amplitude values
-      </div>
-      <div class="demo-wrap" style="margin-top:16px;">
-        <canvas id="acq-canvas" width="400" height="100"></canvas>
-        <div class="demo-label">SAMPLING & QUANTIZATION VISUALIZER</div>
-      </div>
-      <span class="step-badge" id="badge-0">CLICK TO LEARN</span>
-    </div>
-
-    <div class="step-card" style="--accent:#00ff88" onclick="unlockCard(this,1)">
-      <div class="card-header">
-        <div class="step-num" style="color:var(--green)">02</div>
-        <div><div class="step-title">IMAGE ENHANCEMENT</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Making it Beautiful (Subjective)</div></div>
-      </div>
-      <div class="step-body">
-        Enhancement <strong style="color:var(--green)">improves visual quality</strong> for human interpretation. It's a <em>subjective</em> process — results depend on what looks good to the viewer.<br><br>
-        Common methods:
-        • <strong>Contrast Stretching</strong> — expands the intensity range<br>
-        • <strong>Image Sharpening</strong> — enhances edges<br>
-        • <strong>Histogram Equalization</strong> — redistributes intensity values<br><br>
-        <em>Ex: Improving brightness & contrast of a dark photograph.</em>
-      </div>
-      <div class="demo-wrap" style="margin-top:14px;">
-        <div class="controls">
-          <span class="range-label">Brightness</span>
-          <input type="range" id="bright-slider" min="-100" max="100" value="0" oninput="updateEnhance()">
-          <span class="range-label">Contrast</span>
-          <input type="range" id="contrast-slider" min="0.1" max="3" step="0.1" value="1" oninput="updateEnhance()">
-        </div>
-        <canvas id="enhance-canvas" width="400" height="120"></canvas>
-        <div class="demo-label">LIVE IMAGE ENHANCEMENT DEMO</div>
-      </div>
-      <span class="step-badge" style="background:var(--green)" id="badge-1">CLICK TO LEARN</span>
-    </div>
-
-    <div class="step-card" style="--accent:#ff9500" onclick="unlockCard(this,2)">
-      <div class="card-header">
-        <div class="step-num" style="color:#ff9500">03</div>
-        <div><div class="step-title">IMAGE RESTORATION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Recover the Truth (Objective)</div></div>
-      </div>
-      <div class="step-body">
-        Restoration aims to <strong style="color:#ff9500">recover the original image</strong> from a degraded version. It is <em>objective</em> — there is a known target state to restore to.<br><br>
-        • Uses <strong>mathematical & statistical models</strong> to remove distortions<br>
-        • Common degradations: <strong>Blur</strong> (defocus, motion) and <strong>Noise</strong><br>
-        • Unlike enhancement, restoration has a ground-truth goal<br><br>
-        <em>Example of degradation: defocus, motion blur.</em>
-      </div>
-      <div class="demo-wrap" style="margin-top:14px;">
-        <div class="controls">
-          <button class="ctrl-btn" onclick="addBlur()">Add Blur 🌫️</button>
-          <button class="ctrl-btn" onclick="addNoise()">Add Noise 📡</button>
-          <button class="ctrl-btn" onclick="restoreImg()">Restore 🔧</button>
-        </div>
-        <canvas id="restore-canvas" width="400" height="120"></canvas>
-        <div class="demo-label">DEGRADATION & RESTORATION DEMO</div>
-      </div>
-      <span class="step-badge" style="background:#ff9500" id="badge-2">CLICK TO LEARN</span>
-    </div>
-
-    <div class="step-card" style="--accent:#ff00c8" onclick="unlockCard(this,3)">
-      <div class="card-header">
-        <div class="step-num" style="color:var(--magenta)">04</div>
-        <div><div class="step-title">COLOUR IMAGE PROCESSING</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">The World in Colour</div></div>
-      </div>
-      <div class="step-body">
-        Colour processing handles images containing <strong style="color:var(--magenta)">colour information</strong>.<br><br>
-        Key colour models:<br>
-        • <strong>RGB</strong> — Red, Green, Blue (additive, used in screens)<br>
-        • <strong>CMY</strong> — Cyan, Magenta, Yellow (subtractive, used in printing)<br><br>
-        Widely used in <strong>graphics, photography, and video processing</strong>. Each colour channel can be processed independently or jointly.
-      </div>
-      <div class="demo-wrap" style="margin-top:14px;">
-        <canvas id="colour-canvas" width="400" height="120"></canvas>
-        <div class="controls" style="margin-top:8px;">
-          <button class="ctrl-btn" onclick="showColorModel('rgb')">RGB Model</button>
-          <button class="ctrl-btn" onclick="showColorModel('cmy')">CMY Model</button>
-          <button class="ctrl-btn" onclick="showColorModel('channels')">Channels</button>
-        </div>
-        <div class="demo-label">COLOUR MODEL VISUALIZER</div>
-      </div>
-      <span class="step-badge" style="background:var(--magenta)" id="badge-3">CLICK TO LEARN</span>
-    </div>
-
-    <div class="step-card" style="--accent:#ffe000" onclick="unlockCard(this,4)">
-      <div class="card-header">
-        <div class="step-num" style="color:var(--yellow)">05</div>
-        <div><div class="step-title">IMAGE COMPRESSION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Less Space, More Speed</div></div>
-      </div>
-      <div class="step-body">
-        Compression <strong style="color:var(--yellow)">reduces data size</strong> required to represent an image — saves storage and improves transmission efficiency.<br><br>
-        Two fundamental types:<br>
-        • <strong>Lossy (JPEG)</strong> — Data is discarded; higher compression but quality loss<br>
-        • <strong>Lossless (PNG, DIVC)</strong> — No information lost; perfect reconstruction<br><br>
-        <em>Trade-off: File size ↓ vs. Image quality ↑</em>
-      </div>
-      <div class="demo-wrap" style="margin-top:14px;">
-        <canvas id="compress-canvas" width="400" height="120"></canvas>
-        <div class="controls">
-          <span class="range-label">Quality</span>
-          <input type="range" id="quality-slider" min="1" max="20" value="20" oninput="updateCompression()">
-          <span id="quality-label" style="font-family:'Share Tech Mono',monospace;color:var(--yellow)">Q:20</span>
-        </div>
-        <div class="demo-label">COMPRESSION QUALITY DEMO</div>
-      </div>
-      <span class="step-badge" style="background:var(--yellow);color:#000" id="badge-4">CLICK TO LEARN</span>
-    </div>
-
-    <div class="step-card" style="--accent:#00e5ff" onclick="unlockCard(this,5)">
-      <div class="card-header">
-        <div class="step-num">06</div>
-        <div><div class="step-title">IMAGE SEGMENTATION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Divide & Conquer</div></div>
-      </div>
-      <div class="step-body">
-        Segmentation <strong style="color:var(--cyan)">divides an image into meaningful regions</strong> or objects. Simplifies image analysis by separating objects from the background.<br><br>
-        • Enables focused analysis of specific image parts<br>
-        • Critical in <strong>medical imaging</strong> (tumour detection)<br>
-        • Used in <strong>autonomous driving</strong>, surveillance<br><br>
-        <em>Ex: Separating a tumour region from a medical scan.</em>
-      </div>
-      <div class="demo-wrap" style="margin-top:14px;">
-        <canvas id="segment-canvas" width="400" height="120"></canvas>
-        <div class="controls">
-          <button class="ctrl-btn" onclick="runSegmentation()">Segment! 🧩</button>
-          <button class="ctrl-btn" onclick="resetSegment()">Reset</button>
-        </div>
-        <div class="demo-label">SEGMENTATION ANIMATION</div>
-      </div>
-      <span class="step-badge" id="badge-5">CLICK TO LEARN</span>
-    </div>
-
-    <div class="step-card" style="--accent:#00ff88" onclick="unlockCard(this,6)">
-      <div class="card-header">
-        <div class="step-num" style="color:var(--green)">07</div>
-        <div><div class="step-title">OBJECT RECOGNITION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Machines That See</div></div>
-      </div>
-      <div class="step-body">
-        Object recognition <strong style="color:var(--green)">identifies and labels objects</strong> in an image based on extracted features.<br><br>
-        Process:<br>
-        1. <strong>Feature Extraction</strong> — edges, shapes, textures<br>
-        2. <strong>Pattern Matching</strong> — compare with stored database<br>
-        3. <strong>Classification</strong> — assign a label/category<br><br>
-        <em>Examples: Face recognition, fingerprint identification, etc.</em>
-      </div>
-      <div class="demo-wrap" style="margin-top:14px;">
-        <canvas id="recog-canvas" width="400" height="120"></canvas>
-        <div class="demo-label">FEATURE EXTRACTION ANIMATION</div>
-      </div>
-      <span class="step-badge" style="background:var(--green)" id="badge-6">CLICK TO LEARN</span>
-    </div>
-  </div>
-
-  <!-- ════ LAB TAB ════ -->
-  <div class="section" id="tab-lab">
-    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">INTENSITY TRANSFORMATION LAB</h2>
-    <p style="color:var(--dim);font-size:.9rem;margin-bottom:20px;">The formula: <strong style="color:var(--cyan)">s = T(r)</strong> — manipulate pixels directly in the spatial domain.</p>
-
-    <div class="formula-box">s = T(r) &nbsp;|&nbsp; r → input intensity &nbsp;|&nbsp; s → output intensity &nbsp;|&nbsp; T → transform function</div>
-
-    <div class="controls" style="margin:20px 0;">
-      <button class="ctrl-btn active-btn" id="btn-identity" onclick="setTransform('identity')">Identity</button>
-      <button class="ctrl-btn" id="btn-negative" onclick="setTransform('negative')">Negative (L-1-r)</button>
-      <button class="ctrl-btn" id="btn-log" onclick="setTransform('log')">Log</button>
-      <button class="ctrl-btn" id="btn-power" onclick="setTransform('power')">Power Law (γ)</button>
-      <button class="ctrl-btn" id="btn-threshold" onclick="setTransform('threshold')">Threshold</button>
-    </div>
-
-    <div id="gamma-ctrl" style="display:none;text-align:center;margin-bottom:12px;">
-      <span class="range-label">γ (gamma) = </span>
-      <input type="range" id="gamma-slider" min="0.1" max="5" step="0.1" value="2" oninput="setTransform('power')">
-      <span id="gamma-val" style="font-family:'Share Tech Mono',monospace;color:var(--yellow);">2.0</span>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;">
-      <div class="demo-wrap">
-        <canvas id="lab-input" width="280" height="180"></canvas>
-        <div class="demo-label">INPUT IMAGE (r)</div>
-      </div>
-      <div class="demo-wrap">
-        <canvas id="lab-output" width="280" height="180"></canvas>
-        <div class="demo-label">OUTPUT IMAGE (s)</div>
-      </div>
-    </div>
-
-    <div class="demo-wrap">
-      <canvas id="lab-curve" width="400" height="200"></canvas>
-      <div class="demo-label">TRANSFORMATION CURVE T(r)</div>
-    </div>
-
-    <div id="transform-info" style="background:var(--panel2);border:1px solid #1a1a3e;border-radius:14px;padding:20px;margin-top:16px;">
-      <h3 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;">Identity Transform</h3>
-      <p style="color:#b0b8d0;font-size:1rem;line-height:1.6;">The identity transform passes input intensity unchanged to the output: <strong style="color:var(--cyan)">s = r</strong>. The diagonal line in the graph represents this 1-to-1 mapping. Used as a reference baseline.</p>
-    </div>
-  </div>
-
-  <!-- ════ QUIZ TAB ════ -->
-  <div class="section" id="tab-quiz">
-    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">KNOWLEDGE CHALLENGE</h2>
-    <div id="quiz-progress">Question <span id="q-num">1</span> of <span id="q-total">10</span></div>
-    <div class="quiz-card" id="quiz-container">
-      <div class="quiz-q" id="quiz-q"></div>
-      <div class="quiz-opts" id="quiz-opts"></div>
-      <div id="quiz-feedback" style="display:none;" class="quiz-feedback"></div>
-      <button class="next-btn" id="next-btn" style="display:none;" onclick="nextQuestion()">NEXT QUESTION →</button>
-    </div>
-    <div id="quiz-done" style="display:none;text-align:center;padding:40px;">
-      <div style="font-size:3rem;margin-bottom:16px;">🏆</div>
-      <div style="font-family:'Orbitron',monospace;color:var(--yellow);font-size:1.8rem;margin-bottom:8px;">QUIZ COMPLETE!</div>
-      <div id="quiz-final-score" style="font-size:1.2rem;color:#b0b8d0;margin-bottom:24px;"></div>
-      <button class="next-btn" onclick="restartQuiz()">PLAY AGAIN 🔄</button>
-    </div>
-  </div>
-
-  <!-- ════ TRANSFORMS TAB ════ -->
-  <div class="section" id="tab-transform">
-    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">SPATIAL DOMAIN TRANSFORMS</h2>
-
-    <div style="display:grid;gap:16px;">
-      <div class="step-card" style="--accent:#00e5ff;cursor:default;">
-        <div class="card-header">
-          <div class="step-num">T1</div>
-          <div><div class="step-title">SPATIAL DOMAIN</div><div style="color:var(--dim);font-size:.85rem">Work directly on image pixels f(x,y)</div></div>
-        </div>
-        <div class="step-body">
-          In spatial domain, <strong style="color:var(--cyan)">operations are performed directly on pixel values</strong>.<br>
-          Two main categories:<br>
-          • <strong>Intensity Transformation</strong> — operates on single pixels → s = T(r)<br>
-          • <strong>Spatial Filtering</strong> — operates on a neighbourhood of pixels
-        </div>
-        <div class="formula-box" style="margin-top:14px;">g(x,y) = T[ f(x,y) ] &nbsp;&nbsp; where T = transformation operator</div>
-      </div>
-
-      <div class="step-card" style="--accent:#ff9500;cursor:default;">
-        <div class="card-header">
-          <div class="step-num" style="color:#ff9500">T2</div>
-          <div><div class="step-title">FREQUENCY DOMAIN</div><div style="color:var(--dim);font-size:.85rem">Transform → Filter → Inverse Transform</div></div>
-        </div>
-        <div class="step-body">
-          In frequency domain, the image is first <strong style="color:#ff9500">transformed</strong> (e.g., via Fourier Transform), filtered in the transform domain, then <strong>inverse-transformed</strong> back to spatial domain.<br><br>
-          Flow: <strong>Spatial Image → Transform → Filter in Freq. Domain → Inverse Transform → Output</strong>
-        </div>
-        <div class="demo-wrap" style="margin-top:14px;">
-          <canvas id="freq-canvas" width="500" height="80"></canvas>
-          <div class="demo-label">FREQUENCY DOMAIN PIPELINE</div>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;flex-wrap:wrap;">
-        <div class="step-card" style="--accent:#00e5ff;cursor:default;padding:20px;">
-          <div style="font-family:'Orbitron',monospace;font-size:.85rem;color:var(--cyan);margin-bottom:8px;">LINEAR</div>
-          <div class="formula-box" style="font-size:.85rem;padding:10px;">s = r (Identity)<br>s = L-1-r (Negative)</div>
-          <div style="font-size:.85rem;color:#b0b8d0;margin-top:8px;">Straight-line mappings. Identity leaves image unchanged; Negative inverts intensities.</div>
-        </div>
-        <div class="step-card" style="--accent:#00ff88;cursor:default;padding:20px;">
-          <div style="font-family:'Orbitron',monospace;font-size:.85rem;color:var(--green);margin-bottom:8px;">LOGARITHMIC</div>
-          <div class="formula-box" style="font-size:.85rem;padding:10px;border-color:var(--green);color:var(--green);">s = c·log(1+r)</div>
-          <div style="font-size:.85rem;color:#b0b8d0;margin-top:8px;">Compresses bright, expands dark. Useful for Fourier spectrum display. Inverse log does the opposite.</div>
-        </div>
-        <div class="step-card" style="--accent:#ff9500;cursor:default;padding:20px;">
-          <div style="font-family:'Orbitron',monospace;font-size:.85rem;color:#ff9500;margin-bottom:8px;">POWER LAW (γ)</div>
-          <div class="formula-box" style="font-size:.85rem;padding:10px;border-color:#ff9500;color:#ff9500;">s = c·r<sup>γ</sup></div>
-          <div style="font-size:.85rem;color:#b0b8d0;margin-top:8px;">Gamma correction. γ&lt;1 brightens; γ&gt;1 darkens. Used in display calibration (CRT screens).</div>
-        </div>
-      </div>
-
-      <div class="step-card" style="--accent:#ffe000;cursor:default;">
-        <div class="card-header">
-          <div class="step-num" style="color:var(--yellow)">T3</div>
-          <div><div class="step-title">THRESHOLDING</div><div style="color:var(--dim);font-size:.85rem">Creating Binary Images</div></div>
-        </div>
-        <div class="step-body">
-          Image thresholding converts a grayscale image to <strong style="color:var(--yellow)">binary (black/white)</strong>:<br>
-          • If r ≤ K → s = 0 (Black)<br>
-          • If r &gt; K → s = L-1 (White)<br><br>
-          The threshold value K determines the cut-off point.
-        </div>
-        <div class="formula-box" style="margin-top:14px;border-color:var(--yellow);color:var(--yellow);">s = 0 if r ≤ K &nbsp;&nbsp;|&nbsp;&nbsp; s = L-1 if r > K</div>
-        <div class="demo-wrap" style="margin-top:14px;">
-          <div class="controls">
-            <span class="range-label">Threshold K</span>
-            <input type="range" id="thresh-slider" min="0" max="255" value="128" oninput="updateThresh()">
-            <span id="thresh-val" style="font-family:'Share Tech Mono',monospace;color:var(--yellow);">K=128</span>
-          </div>
-          <canvas id="thresh-canvas" width="400" height="100"></canvas>
-          <div class="demo-label">LIVE THRESHOLDING — BINARY IMAGE</div>
-        </div>
-      </div>
-    </div>
-  </div>
+<canvas id="sf" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
+<div id="root">
+<header>
+  <div class="logo">⚡ DIP QUEST</div>
+  <div class="sub">// DIGITAL IMAGE PROCESSING — ALL ANIMATED //</div>
+</header>
+<div id="xpbar">
+  <div class="lvl" id="LVL">LVL 1</div>
+  <div class="xtr"><div class="xfill" id="XF" style="width:0%"></div></div>
+  <div class="xl" id="XL">0/100 XP</div>
+  <div class="st" style="color:var(--g)">⚡<span id="SC">0</span>pts</div>
+  <div class="st" style="color:var(--m)" id="SK">🔥0 streak</div>
+</div>
+<div id="nav">
+  <button class="tb on" style="--acc:#00e5ff" onclick="go('pipe',this)"><span class="ti">🔗</span>Pipeline</button>
+  <button class="tb" style="--acc:#00ff88" onclick="go('acq',this)"><span class="ti">📷</span>Acquire</button>
+  <button class="tb" style="--acc:#ff9500" onclick="go('enh',this)"><span class="ti">✨</span>Enhance</button>
+  <button class="tb" style="--acc:#ff3355" onclick="go('rest',this)"><span class="ti">🔧</span>Restore</button>
+  <button class="tb" style="--acc:#ff00c8" onclick="go('col',this)"><span class="ti">🎨</span>Colour</button>
+  <button class="tb" style="--acc:#ffe000" onclick="go('comp',this)"><span class="ti">📦</span>Compress</button>
+  <button class="tb" style="--acc:#00e5ff" onclick="go('seg',this)"><span class="ti">🧩</span>Segment</button>
+  <button class="tb" style="--acc:#00ff88" onclick="go('recog',this)"><span class="ti">🤖</span>Recognise</button>
+  <button class="tb" style="--acc:#ffe000" onclick="go('lab',this)"><span class="ti">📈</span>Lab</button>
+  <button class="tb" style="--acc:#ff3355" onclick="go('quiz',this)"><span class="ti">🎯</span>Quiz</button>
 </div>
 
-<!-- Toast notifications -->
+<!-- PIPELINE -->
+<div class="sec on" id="s-pipe">
+<div class="card" style="--ca:#00e5ff">
+  <div class="ch"><div class="cn">00</div><div><div class="ct">THE 7-STEP DIP PIPELINE</div><div style="color:var(--dim);font-size:.78rem">Tap any node to illuminate &amp; learn</div></div></div>
+  <div class="cb">The complete digital image processing chain — from raw capture to intelligent recognition. Each stage transforms the image for a specific purpose.</div>
+  <div id="pipe">
+    <div class="pn" style="--pa:#00e5ff" onclick="litN(0,this,'📷 Image Acquisition','The FIRST step — captures analog scene via camera/sensor. Converted to digital through SAMPLING (discrete pixel grid) and QUANTIZATION (discrete intensity levels 0–255). No acquisition = no processing.')"><span class="pi">📷</span>ACQUIRE</div>
+    <div class="pa">→</div>
+    <div class="pn" style="--pa:#00ff88" onclick="litN(1,this,'✨ Image Enhancement','Improves VISUAL QUALITY for human perception. SUBJECTIVE — no mathematical ground truth. Methods: contrast stretching, sharpening, histogram equalization. Ex: brightening a dark photo.')"><span class="pi">✨</span>ENHANCE</div>
+    <div class="pa">→</div>
+    <div class="pn" style="--pa:#ff9500" onclick="litN(2,this,'🔧 Image Restoration','Recovers ORIGINAL image from degradation. OBJECTIVE — known target to recover. Uses math/statistical models to remove blur (defocus, motion) or noise.')"><span class="pi">🔧</span>RESTORE</div>
+    <div class="pa">→</div>
+    <div class="pn" style="--pa:#ff00c8" onclick="litN(3,this,'🎨 Colour Processing','Handles colour information using models: RGB (additive, screens) and CMY (subtractive, printing). Used in graphics, photography, video. Each channel (R,G,B) processed separately or jointly.')"><span class="pi">🎨</span>COLOUR</div>
+    <div class="pa">→</div>
+    <div class="pn" style="--pa:#ffe000" onclick="litN(4,this,'📦 Compression','Reduces data size. LOSSY (JPEG): data lost, higher compression. LOSSLESS (PNG): no data lost. Trade-off: file size vs image quality.')"><span class="pi">📦</span>COMPRESS</div>
+    <div class="pa">→</div>
+    <div class="pn" style="--pa:#00e5ff" onclick="litN(5,this,'🧩 Segmentation','Divides image into MEANINGFUL REGIONS/objects. Separates objects from background. Critical for medical imaging (tumour isolation), autonomous driving, surveillance.')"><span class="pi">🧩</span>SEGMENT</div>
+    <div class="pa">→</div>
+    <div class="pn" style="--pa:#00ff88" onclick="litN(6,this,'🤖 Object Recognition','Identifies & labels objects using stored patterns. Steps: 1) Feature Extraction 2) Pattern Matching 3) Classification. Ex: face recognition, fingerprint ID.')"><span class="pi">🤖</span>RECOGNISE</div>
+  </div>
+  <div class="ibox" id="pi"><h3 id="pt"></h3><p id="pb"></p></div>
+  <div class="cw"><canvas id="cv0" width="620" height="72"></canvas><div class="cl">SIGNAL FLOW — LIVE ANIMATED PARTICLES</div></div>
+</div>
+</div>
+
+<!-- ACQUISITION -->
+<div class="sec" id="s-acq">
+<div class="card" style="--ca:#00e5ff">
+  <div class="ch"><div class="cn">01</div><div><div class="ct">IMAGE ACQUISITION</div><div style="color:var(--dim);font-size:.78rem">Sampling + Quantization</div></div><span class="xpb" id="b0">+20XP</span></div>
+  <div class="cb"><strong>First step</strong> — capturing image via camera/sensor.<br>• <strong>Sampling:</strong> continuous space → discrete pixel grid<br>• <strong>Quantization:</strong> continuous intensity → discrete levels (0–255)</div>
+  <div class="fml" style="--ca:#00e5ff">f(x,y) = intensity at pixel position (x, y)</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#00e5ff" onclick="A('cam')">📷 Camera Flash</button>
+    <button class="btn" style="--ca:#00ff88" onclick="A('samp')">Grid Sampling</button>
+    <button class="btn" style="--ca:#ffe000" onclick="A('quant')">Quantization</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="A('wave')">Analog→Digital</button>
+  </div>
+  <div class="cw"><canvas id="cv1" width="580" height="170"></canvas><div class="cl" id="cl1">CLICK A BUTTON TO ANIMATE</div></div>
+  <div class="cw"><canvas id="cv1b" width="580" height="80"></canvas><div class="cl">LIVE BOUNCING HISTOGRAM</div></div>
+</div>
+</div>
+
+<!-- ENHANCEMENT -->
+<div class="sec" id="s-enh">
+<div class="card" style="--ca:#00ff88">
+  <div class="ch"><div class="cn" style="color:var(--g)">02</div><div><div class="ct">IMAGE ENHANCEMENT</div><div style="color:var(--dim);font-size:.78rem">Subjective Visual Improvement</div></div><span class="xpb" id="b1">+20XP</span></div>
+  <div class="cb">Makes images look <strong>better for human perception</strong>. SUBJECTIVE — no single correct output. Methods: Contrast Stretching, Sharpening, Histogram Equalization, Brightness.</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#00ff88" onclick="E('contrast')">Contrast Stretch</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="E('sharpen')">Sharpen Edges</button>
+    <button class="btn" style="--ca:#ffe000" onclick="E('histeq')">Hist. Equalize</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="E('bright')">Brightness +</button>
+    <button class="btn" style="--ca:#ff3355" onclick="E('reset')">↺ Reset</button>
+  </div>
+  <div class="g2">
+    <div class="cw"><canvas id="cv2a" width="270" height="150"></canvas><div class="cl">INPUT IMAGE</div></div>
+    <div class="cw"><canvas id="cv2b" width="270" height="150"></canvas><div class="cl" id="cl2">OUTPUT</div></div>
+  </div>
+  <div class="cw"><canvas id="cv2c" width="580" height="90"></canvas><div class="cl">ANIMATED HISTOGRAM — BEFORE (CYAN) / AFTER (MAGENTA)</div></div>
+</div>
+</div>
+
+<!-- RESTORATION -->
+<div class="sec" id="s-rest">
+<div class="card" style="--ca:#ff9500">
+  <div class="ch"><div class="cn" style="color:#ff9500">03</div><div><div class="ct">IMAGE RESTORATION</div><div style="color:var(--dim);font-size:.78rem">Objective — Recover the Original</div></div><span class="xpb" id="b2">+20XP</span></div>
+  <div class="cb">Restores the <strong>original image</strong> from degradation. OBJECTIVE — known ground truth. Uses math models to remove blur, noise. Unlike enhancement, there is a correct answer.</div>
+  <div class="fml" style="--ca:#ff9500">f̂ = H⁻¹[g(x,y)]  where H = degradation operator</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#ff3355" onclick="R('blur')">Blur 🌫️</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="R('noise')">Noise ⚡</button>
+    <button class="btn" style="--ca:#ffe000" onclick="R('motion')">Motion Blur 💨</button>
+    <button class="btn" style="--ca:#00ff88" onclick="R('restore')">Restore! 🔧</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="R('clean')">Original</button>
+  </div>
+  <div class="g2">
+    <div class="cw"><canvas id="cv3a" width="270" height="155"></canvas><div class="cl">ORIGINAL IMAGE</div></div>
+    <div class="cw"><canvas id="cv3b" width="270" height="155"></canvas><div class="cl" id="cl3">DEGRADED / RESTORED</div></div>
+  </div>
+  <div class="cw"><canvas id="cv3c" width="580" height="60"></canvas><div class="cl">ERROR MAP (pixel-level difference)</div></div>
+</div>
+</div>
+
+<!-- COLOUR -->
+<div class="sec" id="s-col">
+<div class="card" style="--ca:#ff00c8">
+  <div class="ch"><div class="cn" style="color:var(--m)">04</div><div><div class="ct">COLOUR IMAGE PROCESSING</div><div style="color:var(--dim);font-size:.78rem">RGB, CMY &amp; Channels</div></div><span class="xpb" id="b3">+20XP</span></div>
+  <div class="cb"><strong>RGB</strong> (additive, screens): Red+Green+Blue=White.<br><strong>CMY</strong> (subtractive, printing): Cyan+Magenta+Yellow=Black.<br>Channels can be processed independently.</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#ff5555" onclick="C('rgb')">RGB Mixing</button>
+    <button class="btn" style="--ca:#00cccc" onclick="C('cmy')">CMY Mixing</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="C('chan')">Channels</button>
+    <button class="btn" style="--ca:#ffe000" onclick="C('wheel')">Colour Wheel</button>
+    <button class="btn" style="--ca:#00ff88" onclick="C('spec')">Spectrum</button>
+  </div>
+  <div class="cw"><canvas id="cv4" width="580" height="190"></canvas><div class="cl" id="cl4">SELECT MODE</div></div>
+  <div class="g3">
+    <div class="cw"><canvas id="cv4r" width="180" height="55"></canvas><div class="cl">R CHANNEL</div></div>
+    <div class="cw"><canvas id="cv4g" width="180" height="55"></canvas><div class="cl">G CHANNEL</div></div>
+    <div class="cw"><canvas id="cv4b" width="180" height="55"></canvas><div class="cl">B CHANNEL</div></div>
+  </div>
+</div>
+</div>
+
+<!-- COMPRESSION -->
+<div class="sec" id="s-comp">
+<div class="card" style="--ca:#ffe000">
+  <div class="ch"><div class="cn" style="color:var(--y)">05</div><div><div class="ct">IMAGE COMPRESSION</div><div style="color:var(--dim);font-size:.78rem">Lossy vs Lossless</div></div><span class="xpb" id="b4">+20XP</span></div>
+  <div class="cb"><strong>Lossy (JPEG)</strong> — discards data, higher compression, quality loss.<br><strong>Lossless (PNG)</strong> — perfect reconstruction, no data lost.</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#ff3355" onclick="CP('lossy')">JPEG (Lossy)</button>
+    <button class="btn" style="--ca:#00ff88" onclick="CP('lossless')">PNG (Lossless)</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="CP('compare')">Compare Side-by-Side</button>
+  </div>
+  <div class="ctrl">
+    <span class="rl">Quality:</span>
+    <input type="range" id="qs" style="--ca:#ffe000" min="1" max="32" value="32" oninput="CQ(this.value)">
+    <span class="rv" id="ql" style="color:var(--y)">Q32</span>
+  </div>
+  <div class="cw"><canvas id="cv5" width="580" height="190"></canvas><div class="cl" id="cl5">SELECT COMPRESSION TYPE</div></div>
+  <div class="cw"><canvas id="cv5b" width="580" height="75"></canvas><div class="cl">ANIMATED FILE SIZE BARS</div></div>
+</div>
+</div>
+
+<!-- SEGMENTATION -->
+<div class="sec" id="s-seg">
+<div class="card" style="--ca:#00e5ff">
+  <div class="ch"><div class="cn">06</div><div><div class="ct">IMAGE SEGMENTATION</div><div style="color:var(--dim);font-size:.78rem">Divide Image Into Regions</div></div><span class="xpb" id="b5">+20XP</span></div>
+  <div class="cb">Divides image into <strong>meaningful regions/objects</strong>. Separates foreground from background. Critical in medical imaging (tumour detection), autonomous driving.</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#00e5ff" onclick="S('thresh')">Threshold Scan</button>
+    <button class="btn" style="--ca:#00ff88" onclick="S('region')">Region Grow</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="S('edge')">Edge Detect</button>
+    <button class="btn" style="--ca:#ffe000" onclick="S('medical')">Medical CT Scan</button>
+    <button class="btn" style="--ca:#ff3355" onclick="S('reset')">↺ Reset</button>
+  </div>
+  <div class="g2">
+    <div class="cw"><canvas id="cv6a" width="270" height="175"></canvas><div class="cl">INPUT IMAGE</div></div>
+    <div class="cw"><canvas id="cv6b" width="270" height="175"></canvas><div class="cl" id="cl6">SEGMENTED OUTPUT</div></div>
+  </div>
+  <div class="cw"><canvas id="cv6c" width="580" height="44"></canvas><div class="cl">SEGMENTATION PROGRESS</div></div>
+</div>
+</div>
+
+<!-- RECOGNITION -->
+<div class="sec" id="s-recog">
+<div class="card" style="--ca:#00ff88">
+  <div class="ch"><div class="cn" style="color:var(--g)">07</div><div><div class="ct">OBJECT RECOGNITION</div><div style="color:var(--dim);font-size:.78rem">Extract → Match → Classify</div></div><span class="xpb" id="b6">+25XP</span></div>
+  <div class="cb">Identifies objects using stored patterns.<br>1. <strong>Feature Extraction</strong> (edges, shapes, textures)<br>2. <strong>Pattern Matching</strong> (database compare)<br>3. <strong>Classification</strong> (assign label). Ex: Face recognition, fingerprint ID.</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#00ff88" onclick="RG('scan')">Scan Face 👤</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="RG('feat')">Extract Features</button>
+    <button class="btn" style="--ca:#ffe000" onclick="RG('match')">Match Pattern</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="RG('class')">Classify!</button>
+  </div>
+  <div class="g2">
+    <div class="cw"><canvas id="cv7a" width="270" height="190"></canvas><div class="cl" id="cl7">RECOGNITION ENGINE</div></div>
+    <div class="cw"><canvas id="cv7b" width="270" height="190"></canvas><div class="cl">CONFIDENCE BARS</div></div>
+  </div>
+</div>
+</div>
+
+<!-- LAB -->
+<div class="sec" id="s-lab">
+<div class="card" style="--ca:#ffe000">
+  <div class="ch"><div class="cn" style="color:var(--y)">T</div><div><div class="ct">INTENSITY TRANSFORM LAB</div><div style="color:var(--dim);font-size:.78rem">s = T(r) — Spatial Domain</div></div></div>
+  <div class="fml" style="--ca:#ffe000">s = T(r)  |  r = input intensity  |  s = output intensity  |  T = transform</div>
+  <div class="ctrl">
+    <button class="btn act" id="lb0" style="--ca:#00e5ff" onclick="LB('identity',this)">Identity</button>
+    <button class="btn" id="lb1" style="--ca:#ff3355" onclick="LB('negative',this)">Negative</button>
+    <button class="btn" id="lb2" style="--ca:#00ff88" onclick="LB('log',this)">Log Transform</button>
+    <button class="btn" id="lb3" style="--ca:#ff9500" onclick="LB('power',this)">Power Law γ</button>
+    <button class="btn" id="lb4" style="--ca:#ffe000" onclick="LB('threshold',this)">Threshold</button>
+    <button class="btn" id="lb5" style="--ca:#ff00c8" onclick="LB('contrast',this)">Contrast Stretch</button>
+  </div>
+  <div id="gr" style="display:none;" class="ctrl">
+    <span class="rl">γ =</span>
+    <input type="range" id="gs" style="--ca:#ff9500" min="0.1" max="5" step="0.1" value="2" oninput="UG()">
+    <span class="rv" id="gv" style="color:#ff9500">2.0</span>
+  </div>
+  <div id="kr" style="display:none;" class="ctrl">
+    <span class="rl">K =</span>
+    <input type="range" id="ks" style="--ca:#ffe000" min="0" max="255" value="128" oninput="UK()">
+    <span class="rv" id="kv" style="color:var(--y)">128</span>
+  </div>
+  <div class="g2">
+    <div class="cw"><canvas id="cv8a" width="270" height="150"></canvas><div class="cl">INPUT r</div></div>
+    <div class="cw"><canvas id="cv8b" width="270" height="150"></canvas><div class="cl">OUTPUT s = T(r)</div></div>
+  </div>
+  <div class="cw"><canvas id="cv8c" width="580" height="210"></canvas><div class="cl" id="cl8">TRANSFORMATION CURVE T(r) — ANIMATED DRAW</div></div>
+  <div class="ibox" style="display:block;" id="li"><h3 id="lt">Identity Transform</h3><p id="lb">s = r. No change. The diagonal line is the baseline reference for all other transforms.</p></div>
+</div>
+</div>
+
+<!-- QUIZ -->
+<div class="sec" id="s-quiz">
+  <div style="font-family:'Share Tech Mono',monospace;color:var(--dim);margin-bottom:10px;">Q <span id="qn">1</span>/<span id="qt">10</span> &nbsp;|&nbsp; Score: <span id="qs2" style="color:var(--g)">0</span></div>
+  <div class="qcard" id="qb">
+    <div class="qq" id="qq"></div>
+    <div class="qopts" id="qo"></div>
+    <div class="qfb" id="qf"></div>
+    <button class="nxt" id="qn2" onclick="NQ()">NEXT →</button>
+  </div>
+  <div id="qd" style="display:none;text-align:center;padding:36px;">
+    <div style="font-size:2.8rem">🏆</div>
+    <div style="font-family:'Orbitron',monospace;color:var(--y);font-size:1.5rem;margin:10px 0">COMPLETE!</div>
+    <div id="qfi" style="color:#8a94b0;margin-bottom:18px;"></div>
+    <button class="nxt" style="display:inline-block" onclick="RQ()">PLAY AGAIN 🔄</button>
+  </div>
+</div>
+</div><!-- /root -->
 <div id="toast"></div>
-
-<!-- Achievement popup -->
-<div class="unlock-pop" id="unlock-pop">
-  <div class="unlock-icon" id="unlock-icon">🏅</div>
-  <div class="unlock-title" id="unlock-title">ACHIEVEMENT UNLOCKED!</div>
-  <div class="unlock-sub" id="unlock-sub">You mastered a new concept!</div>
-  <button class="unlock-close" onclick="closeUnlock()">CLAIM REWARD ⚡</button>
-</div>
+<div class="apop" id="apop"><div class="ai" id="ai">🏅</div><div class="at" id="at">UNLOCKED!</div><div class="as" id="as"></div><button class="ac" onclick="CA()">CLAIM ⚡</button></div>
 
 <script>
-// ─── STATE ───
-let xp = 0, level = 1, score = 0, streak = 0, cardsUnlocked = [];
-const XP_PER_LEVEL = 100;
+// ────────────────────────────────────────────
+// GLOBALS & STATE
+// ────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const X = id => { const c=$(id); return c ? c.getContext('2d') : null; };
+let xp=0,lv=1,sc=0,sk=0,done=new Set();
+let CUR='pipe';
 
-// ─── STARS ───
-(function() {
-  const s = document.getElementById('stars');
-  for(let i=0;i<120;i++){
-    const d = document.createElement('div');
-    d.className='star';
-    const size = Math.random()*3+1;
-    d.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:#fff;--d:${(Math.random()*4+2).toFixed(1)}s;--delay:-${(Math.random()*5).toFixed(1)}s;opacity:${Math.random()*.8};`;
-    s.appendChild(d);
-  }
+// XP system
+function gainXP(n,why,badge){
+  if(badge&&!done.has(badge)){done.add(badge);const b=$(badge);if(b){b.textContent='✅';b.classList.add('done');}n*=2;}
+  xp+=n; sc+=n*(sk+1); sk++;
+  toast(`+${n}XP — ${why}`);
+  $('SC').textContent=sc; $('SK').textContent=`🔥${sk} streak`;
+  const p=(xp%100)/100*100;
+  $('XF').style.width=p+'%';$('XL').textContent=`${xp%100}/100 XP`;
+  const nl=Math.floor(xp/100)+1;
+  if(nl>lv){lv=nl;$('LVL').textContent=`LVL ${lv}`;achieve('⬆️',`LEVEL ${lv}!`,'Knowledge growing!');}
+}
+function toast(msg,a=false){const d=document.createElement('div');d.className='tm'+(a?' a':'');d.textContent=msg;$('toast').appendChild(d);setTimeout(()=>d.remove(),3000);}
+function achieve(ic,ti,su){$('ai').textContent=ic;$('at').textContent=ti;$('as').textContent=su;$('apop').classList.add('show');toast('🏅 '+ti,true);}
+function CA(){$('apop').classList.remove('show');}
+
+// Navigation
+function go(id,btn){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  $('s-'+id).classList.add('on'); btn.classList.add('on'); CUR=id;
+  init(id);
+}
+function init(id){
+  ({pipe:pipeInit,acq:acqInit,enh:enhInit,rest:restInit,col:colInit,comp:compInit,seg:segInit,recog:recogInit,lab:labInit,quiz:quizInit}[id]||function(){})();
+}
+
+// ────────────────────────────────────────────
+// STARFIELD
+// ────────────────────────────────────────────
+(()=>{
+  const c=$('sf'),x=c.getContext('2d');
+  c.width=window.innerWidth; c.height=window.innerHeight;
+  const stars=Array.from({length:150},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.4+.3,s:Math.random()*3+1.5,p:Math.random()*6.28}));
+  (function draw(){
+    x.clearRect(0,0,c.width,c.height);
+    const t=Date.now()/1000;
+    stars.forEach(s=>{const a=.1+.7*(.5+.5*Math.sin(t/s.s+s.p));x.beginPath();x.arc(s.x,s.y,s.r,0,Math.PI*2);x.fillStyle=`rgba(190,210,255,${a})`;x.fill();});
+    requestAnimationFrame(draw);
+  })();
 })();
 
-// ─── XP SYSTEM ───
-function addXP(amount, reason) {
-  xp += amount;
-  score += amount * (streak+1);
-  streak++;
-  if(streak>1) showToast(`🔥 ${streak}x streak! +${amount*streak} bonus!`, false);
-  else showToast(`+${amount} XP — ${reason}`, false);
-  updateXPBar();
-  document.getElementById('score-val').textContent = score;
-  document.getElementById('streak-display').textContent = `🔥 ${streak} streak`;
-}
-
-function updateXPBar() {
-  const lv = Math.floor(xp/XP_PER_LEVEL)+1;
-  const pct = (xp%XP_PER_LEVEL)/XP_PER_LEVEL*100;
-  document.getElementById('xp-fill').style.width = pct+'%';
-  document.getElementById('xp-label').textContent = `${xp%XP_PER_LEVEL} / ${XP_PER_LEVEL} XP`;
-  if(lv > level) {
-    level = lv;
-    document.getElementById('level-badge').textContent = `LVL ${level}`;
-    showAchievement('⬆️', `LEVEL ${level} REACHED!`, `Your image processing knowledge grows!`);
-  }
-}
-
-// ─── TABS ───
-function showTab(id) {
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
-  event.currentTarget.classList.add('active');
-  initCanvases(id);
-}
-
-// ─── PIPELINE ───
-let pipeNodes=[];
-function lightNode(idx, el, title, body) {
-  document.querySelectorAll('.pipe-node').forEach(n=>{n.classList.remove('lit');});
+// ────────────────────────────────────────────
+// PIPELINE
+// ────────────────────────────────────────────
+let pDone=[];
+function litN(i,el,title,body){
+  document.querySelectorAll('.pn').forEach(n=>n.classList.remove('lit'));
   el.classList.add('lit');
-  const info = document.getElementById('pipe-info');
-  info.style.display='block';
-  document.getElementById('pipe-info-title').textContent = '⚡ ' + title;
-  document.getElementById('pipe-info-body').textContent = body;
-  if(!pipeNodes.includes(idx)){
-    pipeNodes.push(idx);
-    addXP(15, title);
-    if(pipeNodes.length===7) showAchievement('🔗','PIPELINE MASTER!','You explored all 7 DIP steps!');
-  }
+  $('pi').style.display='block';$('pt').textContent=title;$('pb').textContent=body;
+  if(!pDone.includes(i)){pDone.push(i);gainXP(15,'Pipeline node');if(pDone.length===7)achieve('🔗','Pipeline Master!','All 7 steps explored!');}
 }
-
-// Pipeline animation canvas
-function animatePipeline() {
-  const cv = document.getElementById('pipe-canvas');
-  if(!cv) return;
-  const ctx = cv.getContext('2d');
-  let t = 0;
-  function draw() {
-    ctx.clearRect(0,0,cv.width,cv.height);
-    ctx.fillStyle = '#05050f';
-    ctx.fillRect(0,0,cv.width,cv.height);
-    const nodes = 7;
-    const spacing = cv.width/nodes;
-    const colors = ['#00e5ff','#00ff88','#ff9500','#ff00c8','#ffe000','#00e5ff','#00ff88'];
-    // draw connections
-    for(let i=0;i<nodes-1;i++){
-      const x = spacing*i + spacing/2;
-      const nx = spacing*(i+1) + spacing/2;
-      ctx.beginPath();
-      ctx.moveTo(x,45);ctx.lineTo(nx,45);
-      ctx.strokeStyle = '#1a1a3e';ctx.lineWidth=2;ctx.stroke();
+function pipeInit(){
+  const c=$('cv0'),x=X('cv0');if(!c)return;
+  const w=c.width,h=c.height,N=7;
+  const accs=['#00e5ff','#00ff88','#ff9500','#ff00c8','#ffe000','#00e5ff','#00ff88'];
+  const gap=w/N;
+  (function draw(){
+    if(CUR!=='pipe')return;
+    const t=Date.now()/1000;
+    x.clearRect(0,0,w,h);x.fillStyle='#04040e';x.fillRect(0,0,w,h);
+    // connections
+    for(let i=0;i<N-1;i++){
+      const ax=gap*i+gap/2,bx=gap*(i+1)+gap/2;
+      x.beginPath();x.moveTo(ax,h/2);x.lineTo(bx,h/2);x.strokeStyle='#1a1a3a';x.lineWidth=2;x.stroke();
     }
-    // animated particle
-    const px = (t%1)*(cv.width-40)+20;
-    const ni = Math.floor(px/spacing);
-    const col = colors[Math.min(ni,colors.length-1)];
-    // glow
-    const gr = ctx.createRadialGradient(px,45,0,px,45,20);
-    gr.addColorStop(0,col+'ff');
-    gr.addColorStop(1,col+'00');
-    ctx.beginPath();ctx.arc(px,45,20,0,Math.PI*2);ctx.fillStyle=gr;ctx.fill();
-    ctx.beginPath();ctx.arc(px,45,5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    // 3 particles
+    for(let p=0;p<3;p++){
+      const frac=((t*.28+p/3)%1);
+      const px=frac*(w-16)+8;
+      const ni=Math.min(N-1,Math.floor(px/gap));
+      const col=accs[ni];
+      const gr=x.createRadialGradient(px,h/2,0,px,h/2,20);
+      gr.addColorStop(0,col);gr.addColorStop(1,col+'00');
+      x.beginPath();x.arc(px,h/2,20,0,Math.PI*2);x.fillStyle=gr;x.fill();
+      x.beginPath();x.arc(px,h/2,4,0,Math.PI*2);x.fillStyle=col;x.fill();
+    }
     // nodes
-    for(let i=0;i<nodes;i++){
-      const x=spacing*i+spacing/2;
-      ctx.beginPath();ctx.arc(x,45,10,0,Math.PI*2);
-      ctx.fillStyle = pipeNodes.includes(i) ? colors[i] : '#1a1a3e';
-      ctx.fill();
-      ctx.strokeStyle=colors[i];ctx.lineWidth=2;ctx.stroke();
+    for(let i=0;i<N;i++){
+      const nx=gap*i+gap/2,lit=pDone.includes(i);
+      x.beginPath();x.arc(nx,h/2,11,0,Math.PI*2);x.fillStyle=lit?accs[i]+'33':'#0d0d24';x.fill();
+      x.strokeStyle=accs[i];x.lineWidth=lit?2.5:1.5;
+      if(lit){x.shadowBlur=14;x.shadowColor=accs[i];}x.stroke();x.shadowBlur=0;
+      if(lit){x.beginPath();x.arc(nx,h/2,5,0,Math.PI*2);x.fillStyle=accs[i];x.fill();}
     }
-    t+=0.004; requestAnimationFrame(draw);
+    requestAnimationFrame(draw);
+  })();
+}
+
+// ────────────────────────────────────────────
+// ACQUISITION
+// ────────────────────────────────────────────
+let aMode='wave',aT=0;
+const aColors=['#00e5ff','#00ff88','#ff00c8','#ffe000','#ff9500'];
+function acqInit(){acqLoop();acqHistLoop();}
+function A(m){aMode=m;gainXP(10,m,'b0');$('cl1').textContent={cam:'CAMERA FLASH → DIGITIZING',samp:'SAMPLING — DISCRETE PIXEL GRID',quant:'QUANTIZATION LEVELS',wave:'ANALOG → DIGITAL SIGNAL'}[m]||m;}
+function acqLoop(){
+  const c=$('cv1'),x=X('cv1');if(!c)return;
+  (function draw(){
+    if(CUR!=='acq')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);x.fillStyle='#04040e';x.fillRect(0,0,w,h);
+    if(aMode==='wave'){
+      // Animated analog vs digital wave
+      x.beginPath();x.strokeStyle='#00e5ff';x.lineWidth=2.5;x.shadowBlur=8;x.shadowColor='#00e5ff';
+      for(let i=0;i<w/2-20;i++){const y=h/2+Math.sin(i*.07+t*1.8)*52+Math.sin(i*.022+t*.5)*22;i===0?x.moveTo(i+8,y):x.lineTo(i+8,y);}x.stroke();x.shadowBlur=0;
+      x.fillStyle='#00e5ff';x.font='10px Share Tech Mono';x.fillText('ANALOG (continuous)',8,14);
+      // Digital sampled on right
+      for(let i=0;i<16;i++){
+        const col=aColors[i%aColors.length];
+        const sy=h/2+Math.sin(i*.44+t*.3)*52+Math.sin(i*.138)*22;
+        const bh=h/2-sy+44;
+        x.fillStyle=col+'44';x.fillRect(w/2+14+i*17,sy,13,Math.max(0,bh));
+        x.beginPath();x.arc(w/2+20+i*17,sy,5,0,Math.PI*2);x.fillStyle=col;x.fill();
+        x.shadowBlur=6;x.shadowColor=col;x.fill();x.shadowBlur=0;
+      }
+      x.fillStyle='#00ff88';x.font='10px Share Tech Mono';x.fillText('DIGITAL (sampled+quantized)',w/2+14,14);
+      x.fillStyle='#ffe000';x.font='22px sans';x.fillText('→',w/2-12,h/2+8);
+    } else if(aMode==='cam'){
+      const fl=(.5+.5*Math.sin(t*4))*.8;
+      x.fillStyle=`rgba(255,255,180,${fl*.35})`;x.fillRect(0,0,w,h);
+      x.strokeStyle=`rgba(0,229,255,${.5+fl*.5})`;x.lineWidth=3;x.shadowBlur=10+fl*8;x.shadowColor='#00e5ff';
+      x.beginPath();x.roundRect(w/2-90,h/2-55,180,110,12);x.stroke();
+      x.beginPath();x.arc(w/2,h/2,40,0,Math.PI*2);x.stroke();
+      x.beginPath();x.arc(w/2,h/2,25,0,Math.PI*2);x.stroke();
+      x.shadowBlur=0;
+      x.beginPath();x.arc(w/2,h/2,8,0,Math.PI*2);x.fillStyle=`rgba(0,229,255,${fl})`;x.fill();
+      // pixelating right side
+      const cs=Math.max(3,Math.round((1-fl)*18)+3);
+      for(let py=0;py<h;py+=cs)for(let px=w/2+100;px<w-8;px+=cs){
+        x.fillStyle=`rgba(${100+Math.random()*80|0},${100+Math.random()*80|0},${150+Math.random()*60|0},${fl*.7})`;x.fillRect(px,py,cs-1,cs-1);
+      }
+      x.fillStyle=fl>.6?'#ffe000':'#00e5ff';x.font='bold 11px Orbitron';x.fillText(fl>.6?'⚡ FLASH!':'READY',w/2+100,20);
+    } else if(aMode==='samp'){
+      const COLS=22,ROWS=12,cw=Math.floor(w/COLS),ch=Math.floor(h/ROWS);
+      const prog=(.5+.5*Math.sin(t*.4));
+      for(let r=0;r<ROWS;r++)for(let cc=0;cc<COLS;cc++){
+        const rev=(cc/COLS+r/(ROWS*COLS))<prog;
+        const v=Math.sin(cc*.35+t*.1)*80+Math.cos(r*.4)*40+105;
+        x.fillStyle=rev?`rgb(${v|0},${(v*.75)|0},${(v*1.2)|0})`:'#0a0a22';
+        x.fillRect(cc*cw,r*ch,cw-1,ch-1);
+      }
+      x.strokeStyle='#00e5ff1a';x.lineWidth=.5;
+      for(let cc=0;cc<=COLS;cc++){x.beginPath();x.moveTo(cc*cw,0);x.lineTo(cc*cw,h);x.stroke();}
+      for(let r=0;r<=ROWS;r++){x.beginPath();x.moveTo(0,r*ch);x.lineTo(w,r*ch);x.stroke();}
+      x.fillStyle='#00e5ff';x.font='bold 11px Orbitron';x.fillText(`SAMPLING ${(prog*100)|0}%`,10,h-8);
+    } else if(aMode==='quant'){
+      const levels=[2,4,8,16,32,64,128,256];
+      const li=Math.floor(((Math.sin(t*.45)+1)/2)*(levels.length-1));
+      const L=levels[li];const sw=w/L;
+      for(let i=0;i<L;i++){const v=(i/L*255)|0;x.fillStyle=`rgb(${v},${v},${v})`;x.fillRect(i*sw,18,sw,h-36);}
+      x.fillStyle='rgba(0,0,0,.55)';x.fillRect(0,0,w,22);x.fillRect(0,h-22,w,22);
+      x.fillStyle='#ffe000';x.font='bold 12px Orbitron';x.fillText(`${L} INTENSITY LEVELS`,10,16);
+      x.fillStyle='rgba(255,255,255,.7)';x.font='10px Share Tech Mono';
+      x.fillText(L===256?'8-bit grayscale — smooth':L<=4?'Very rough! Only 4 shades':L<=16?'Rough quantization':'OK quantization',10,h-6);
+    }
+    requestAnimationFrame(draw);
+  })();
+}
+function acqHistLoop(){
+  const c=$('cv1b'),x=X('cv1b');if(!c)return;
+  const bars=new Array(32).fill(0);
+  (function draw(){
+    if(CUR!=='acq')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);x.fillStyle='#050510';x.fillRect(0,0,w,h);
+    x.strokeStyle='#141432';x.lineWidth=1;x.beginPath();x.moveTo(6,h-12);x.lineTo(w-6,h-12);x.stroke();
+    const bw=(w-14)/32;
+    for(let i=0;i<32;i++){
+      const tgt=Math.sin(i*.32+t*1.2)*24+Math.sin(i*.71+t*.8)*16+40+Math.cos(i*.12)*10;
+      bars[i]=bars[i]*.82+tgt*.18;
+      const bh=bars[i];const g=x.createLinearGradient(0,h-12-bh,0,h-12);
+      g.addColorStop(0,aColors[i%aColors.length]);g.addColorStop(1,aColors[i%aColors.length]+'44');
+      x.fillStyle=g;x.fillRect(7+i*bw,h-12-bh,bw-1,bh);
+    }
+    x.fillStyle='#3a4060';x.font='9px Share Tech Mono';x.fillText('0',5,h-2);x.fillText('255',w-22,h-2);
+    requestAnimationFrame(draw);
+  })();
+}
+
+// ────────────────────────────────────────────
+// ENHANCEMENT
+// ────────────────────────────────────────────
+let ePixels=[],eOut=[],eMode='reset';
+const EC=30,ER=18;
+function enhInit(){
+  ePixels=[];
+  for(let r=0;r<ER;r++)for(let c=0;c<EC;c++){
+    const v=Math.sin(c*.28+r*.1)*55+Math.cos(r*.36)*40+105+Math.random()*15;
+    ePixels.push(Math.max(10,Math.min(245,v)));
   }
-  draw();
+  eOut=[...ePixels];drawEnhIn();drawEnhOut(eOut,'ORIGINAL');enhHistLoop();
+}
+function drawEnhIn(){
+  const c=$('cv2a'),x=X('cv2a');if(!c)return;
+  const w=c.width,h=c.height,cw=w/EC,ch=h/ER;
+  ePixels.forEach((v,i)=>{const r=i/EC|0,cc=i%EC;x.fillStyle=`rgb(${v|0},${(v*.72)|0},${(v*1.18)|0})`;x.fillRect(cc*cw,r*ch,cw,ch);});
+  x.fillStyle='rgba(0,229,255,.8)';x.font='10px Share Tech Mono';x.fillText('ORIGINAL',3,12);
+}
+function drawEnhOut(vals,label){
+  const c=$('cv2b'),x=X('cv2b');if(!c)return;
+  const w=c.width,h=c.height,cw=w/EC,ch=h/ER;
+  vals.forEach((v,i)=>{const r=i/EC|0,cc=i%EC;x.fillStyle=`rgb(${v|0},${(v*.72)|0},${(v*1.18)|0})`;x.fillRect(cc*cw,r*ch,cw,ch);});
+  x.fillStyle='rgba(255,0,200,.9)';x.font='10px Share Tech Mono';x.fillText(label,3,12);$('cl2').textContent=label;
+}
+function E(mode){
+  eMode=mode;gainXP(12,mode,'b1');
+  const out=[...ePixels];let label='';
+  if(mode==='contrast'){const mn=Math.min(...out),mx=Math.max(...out);out.forEach((v,i)=>out[i]=((v-mn)/(mx-mn)*255)|0);label='CONTRAST STRETCHED';}
+  else if(mode==='sharpen'){out.forEach((v,i)=>out[i]=Math.min(255,(v*1.35+12)|0));label='SHARPENED';}
+  else if(mode==='histeq'){
+    const h=new Array(256).fill(0);ePixels.forEach(v=>h[v|0]++);
+    let cum=0;const cdf=h.map(v=>{cum+=v;return cum;});
+    const tot=ePixels.length,mn=cdf.find(v=>v>0)||1;
+    out.forEach((v,i)=>out[i]=Math.round((cdf[v|0]-mn)/(tot-mn)*255));label='HISTOGRAM EQUALIZED';
+  } else if(mode==='bright'){out.forEach((v,i)=>out[i]=Math.min(255,v+70));label='BRIGHTENED';}
+  else{eOut=[...ePixels];drawEnhOut(eOut,'ORIGINAL');return;}
+  eOut=out;
+  // Animated transition
+  let p=0; const orig=[...ePixels];
+  (function step(){
+    const cur2=orig.map((v,i)=>v+(out[i]-v)*p);
+    drawEnhOut(cur2,label);p=Math.min(1,p+.06);
+    if(p<1)requestAnimationFrame(step);
+  })();
+}
+function enhHistLoop(){
+  const c=$('cv2c'),x=X('cv2c');if(!c)return;
+  const bBars=new Array(28).fill(0),aBars=new Array(28).fill(0);
+  (function draw(){
+    if(CUR!=='enh')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);x.fillStyle='#050510';x.fillRect(0,0,w,h);
+    const bins=28,bw=(w-16)/bins;
+    // compute
+    const bef=new Array(bins).fill(0),aft=new Array(bins).fill(0);
+    ePixels.forEach(v=>bef[Math.min(bins-1,(v/256*bins)|0)]++);
+    eOut.forEach(v=>aft[Math.min(bins-1,(v/256*bins)|0)]++);
+    const mx=Math.max(...bef,...aft)||1;
+    for(let i=0;i<bins;i++){
+      // target heights
+      const bt=(bef[i]/mx)*(h-18),at=(aft[i]/mx)*(h-18);
+      bBars[i]=bBars[i]*.84+bt*.16;aBars[i]=aBars[i]*.84+at*.16;
+      const bx=8+i*bw;
+      x.fillStyle='rgba(0,229,255,.55)';x.fillRect(bx,h-10-bBars[i],bw*.44,bBars[i]);
+      x.fillStyle='rgba(255,0,200,.7)';x.fillRect(bx+bw*.48,h-10-aBars[i],bw*.44,aBars[i]);
+    }
+    x.fillStyle='rgba(0,229,255,.8)';x.font='9px Share Tech Mono';x.fillText('■ BEFORE',8,12);
+    x.fillStyle='rgba(255,0,200,.8)';x.fillText('■ AFTER',62,12);
+    requestAnimationFrame(draw);
+  })();
 }
 
-// ─── CARDS ───
-const cardNames = ['Image Acquisition','Image Enhancement','Image Restoration','Colour Processing','Image Compression','Image Segmentation','Object Recognition'];
-const cardXP = [20,20,20,20,20,20,25];
+// ────────────────────────────────────────────
+// RESTORATION
+// ────────────────────────────────────────────
+let rMode='clean';
+function restInit(){drawRestOrig();restLoop();}
+function drawRestOrig(){
+  const c=$('cv3a'),x=X('cv3a');if(!c)return;
+  const w=c.width,h=c.height;
+  x.fillStyle='#060616';x.fillRect(0,0,w,h);
+  x.fillStyle='#1a2a5a';x.fillRect(16,16,72,66);x.strokeStyle='#00e5ff';x.lineWidth=2;x.strokeRect(16,16,72,66);
+  x.fillStyle='#2a1a4a';x.beginPath();x.arc(158,62,38,0,Math.PI*2);x.fill();x.strokeStyle='#ff00c8';x.lineWidth=2;x.stroke();
+  x.fillStyle='#1a3a2a';x.beginPath();x.moveTo(205,16);x.lineTo(255,90);x.lineTo(155,90);x.closePath();x.fill();x.strokeStyle='#00ff88';x.lineWidth=2;x.stroke();
+  x.fillStyle='rgba(0,229,255,.7)';x.font='10px Share Tech Mono';x.fillText('ORIGINAL ✅',3,12);
+}
+function restLoop(){
+  const c=$('cv3b'),x=X('cv3b'),dc=$('cv3c');if(!c)return;
+  (function draw(){
+    if(CUR!=='rest')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);x.fillStyle='#060616';x.fillRect(0,0,w,h);
+    x.fillStyle='#1a2a5a';x.fillRect(16,16,72,66);
+    x.fillStyle='#2a1a4a';x.beginPath();x.arc(158,62,38,0,Math.PI*2);x.fill();
+    x.fillStyle='#1a3a2a';x.beginPath();x.moveTo(205,16);x.lineTo(255,90);x.lineTo(155,90);x.closePath();x.fill();
+    if(rMode==='blur'){
+      x.filter=`blur(${3+1.5*Math.sin(t*1.5)}px)`;x.drawImage(c,0,0);x.filter='none';
+      x.fillStyle='#ff9500';x.font='10px Share Tech Mono';x.fillText('BLUR DEGRADED 🌫️',3,12);
+    } else if(rMode==='noise'){
+      x.strokeStyle='#00e5ff';x.lineWidth=2;x.strokeRect(16,16,72,66);x.strokeStyle='#ff00c8';x.beginPath();x.arc(158,62,38,0,Math.PI*2);x.stroke();x.strokeStyle='#00ff88';x.beginPath();x.moveTo(205,16);x.lineTo(255,90);x.lineTo(155,90);x.closePath();x.stroke();
+      for(let i=0;i<700;i++){const nx=Math.random()*w,ny=Math.random()*h;x.fillStyle=`rgba(${Math.random()>0.5?255:0},${Math.random()>0.5?255:0},255,${Math.random()*.7})`;x.fillRect(nx,ny,2,2);}
+      x.fillStyle='#ff3355';x.font='10px Share Tech Mono';x.fillText('NOISE DEGRADED ⚡',3,12);
+    } else if(rMode==='motion'){
+      for(let i=0;i<10;i++){x.globalAlpha=.08+i*.01;x.fillStyle='#1a2a5a';x.fillRect(16+i*5,16,72,66);x.fillStyle='#2a1a4a';x.beginPath();x.arc(158+i*4,62,38,0,Math.PI*2);x.fill();}
+      x.globalAlpha=1;x.fillStyle='#ffe000';x.font='10px Share Tech Mono';x.fillText('MOTION BLUR 💨',3,12);
+    } else if(rMode==='restore'){
+      const sc=(.5+.5*Math.sin(t*.5));const sy=sc*h;
+      x.save();x.beginPath();x.rect(0,sy,w,h-sy);x.clip();x.filter='blur(3px)';x.fillStyle='#060616';x.fillRect(0,0,w,h);x.fillStyle='#1a2a5a';x.fillRect(16,16,72,66);x.fillStyle='#2a1a4a';x.beginPath();x.arc(158,62,38,0,Math.PI*2);x.fill();x.filter='none';x.restore();
+      x.save();x.beginPath();x.rect(0,0,w,sy);x.clip();x.strokeStyle='#00e5ff';x.lineWidth=2;x.strokeRect(16,16,72,66);x.strokeStyle='#ff00c8';x.beginPath();x.arc(158,62,38,0,Math.PI*2);x.stroke();x.strokeStyle='#00ff88';x.beginPath();x.moveTo(205,16);x.lineTo(255,90);x.lineTo(155,90);x.closePath();x.stroke();x.restore();
+      x.strokeStyle='#00ff88';x.lineWidth=2.5;x.shadowBlur=12;x.shadowColor='#00ff88';x.setLineDash([5,5]);x.beginPath();x.moveTo(0,sy);x.lineTo(w,sy);x.stroke();x.setLineDash([]);x.shadowBlur=0;
+      x.fillStyle='#00ff88';x.font='10px Share Tech Mono';x.fillText(`RESTORING ${(sc*100)|0}% 🔧`,3,12);
+    } else {
+      x.strokeStyle='#00e5ff';x.lineWidth=2;x.strokeRect(16,16,72,66);x.strokeStyle='#ff00c8';x.beginPath();x.arc(158,62,38,0,Math.PI*2);x.stroke();x.strokeStyle='#00ff88';x.beginPath();x.moveTo(205,16);x.lineTo(255,90);x.lineTo(155,90);x.closePath();x.stroke();
+      x.fillStyle='rgba(0,229,255,.6)';x.font='10px Share Tech Mono';x.fillText('WAITING...',3,12);
+    }
+    // Error map
+    if(dc){
+      const dx=dc.getContext('2d'),dw=dc.width,dh=dc.height;
+      dx.clearRect(0,0,dw,dh);dx.fillStyle='#050510';dx.fillRect(0,0,dw,dh);
+      const errLv=rMode==='clean'||rMode==='restore'?2:rMode==='noise'?160:90;
+      for(let i=0;i<dw;i+=5){
+        const e=Math.abs(Math.sin(i*.07+t)*errLv+Math.random()*errLv*.2)*(.5+.5*Math.sin(i*.02+t*.5));
+        dx.fillStyle=`hsl(${e>5?0:120},100%,${Math.min(70,e*.4)}%)`;dx.fillRect(i,0,4,dh);
+      }
+      dx.fillStyle='rgba(255,255,255,.6)';dx.font='9px Share Tech Mono';
+      dx.fillText(`ERROR LEVEL: ${rMode==='clean'||rMode==='restore'?'LOW ✅':'HIGH ⚠️'}`,8,14);
+    }
+    requestAnimationFrame(draw);
+  })();
+}
+function R(m){rMode=m;gainXP(10,m,'b2');$('cl3').textContent={blur:'BLUR DEGRADED',noise:'NOISE DEGRADED',motion:'MOTION BLUR',restore:'RESTORING...',clean:'ORIGINAL'}[m]||m;}
 
-function unlockCard(el, idx) {
-  if(cardsUnlocked.includes(idx)) return;
-  cardsUnlocked.push(idx);
-  const badge = document.getElementById('badge-'+idx);
-  badge.textContent = '✅ UNLOCKED';
-  badge.classList.add('done');
-  addXP(cardXP[idx], cardNames[idx]);
-  if(cardsUnlocked.length===7) showAchievement('📚','ALL STEPS MASTERED!','You learned all 7 DIP fundamentals!');
+// ────────────────────────────────────────────
+// COLOUR
+// ────────────────────────────────────────────
+let colMode='rgb';
+function colInit(){colLoop();['R','G','B'].forEach((ch,i)=>colChan(ch,i));}
+function C(m){colMode=m;gainXP(10,m,'b3');$('cl4').textContent={rgb:'RGB ADDITIVE MODEL',cmy:'CMY SUBTRACTIVE MODEL',chan:'RGB CHANNEL SEPARATION',wheel:'COLOUR WHEEL',spec:'VISIBLE SPECTRUM'}[m]||m;}
+function colLoop(){
+  const c=$('cv4'),x=X('cv4');if(!c)return;
+  (function draw(){
+    if(CUR!=='col')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);
+    if(colMode==='rgb'){
+      x.fillStyle='#04040e';x.fillRect(0,0,w,h);
+      const R=58+10*Math.sin(t*.7),ox=28*Math.sin(t*.5),oy=18*Math.sin(t*.6);
+      const cs=[{x:w*.38+ox,y:h*.42+oy,c:'rgba(255,50,50,.72)'},{x:w*.58+ox,y:h*.42+oy,c:'rgba(50,220,50,.72)'},{x:w*.48+ox,y:h*.62+oy,c:'rgba(60,80,255,.72)'}];
+      x.globalCompositeOperation='screen';
+      cs.forEach(cc=>{x.beginPath();x.arc(cc.x,cc.y,R,0,Math.PI*2);x.fillStyle=cc.c;x.fill();});
+      x.globalCompositeOperation='source-over';
+      x.fillStyle='rgba(255,255,255,.85)';x.font='bold 12px Orbitron';x.textAlign='center';x.fillText('RGB — ADDITIVE MODEL',w/2,h-10);
+      x.fillStyle='rgba(190,200,230,.6)';x.font='10px Rajdhani';x.fillText('Red + Green + Blue = WHITE center',w/2,h-26);x.textAlign='left';
+    } else if(colMode==='cmy'){
+      x.fillStyle='#f0f0ee';x.fillRect(0,0,w,h);
+      const R=58+10*Math.sin(t*.7),ox=28*Math.sin(t*.5),oy=18*Math.sin(t*.6);
+      const cs=[{x:w*.38+ox,y:h*.38+oy,c:'rgba(0,200,200,.72)'},{x:w*.58+ox,y:h*.38+oy,c:'rgba(200,0,200,.72)'},{x:w*.48+ox,y:h*.58+oy,c:'rgba(200,200,0,.72)'}];
+      x.globalCompositeOperation='multiply';
+      cs.forEach(cc=>{x.beginPath();x.arc(cc.x,cc.y,R,0,Math.PI*2);x.fillStyle=cc.c;x.fill();});
+      x.globalCompositeOperation='source-over';
+      x.fillStyle='#111';x.font='bold 12px Orbitron';x.textAlign='center';x.fillText('CMY — SUBTRACTIVE MODEL',w/2,h-10);
+      x.fillStyle='#444';x.font='10px Rajdhani';x.fillText('Cyan + Magenta + Yellow = BLACK center',w/2,h-26);x.textAlign='left';
+    } else if(colMode==='wheel'){
+      x.fillStyle='#04040e';x.fillRect(0,0,w,h);
+      const cx=w/2,cy=h/2,R=Math.min(w,h)/2-20;
+      for(let a=0;a<360;a+=.6){
+        const ra=(a/180)*Math.PI+t*.25;
+        x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,R,ra,ra+.012);x.closePath();
+        x.fillStyle=`hsl(${a},100%,50%)`;x.fill();
+      }
+      x.beginPath();x.arc(cx,cy,R*.28,0,Math.PI*2);x.fillStyle='#fff';x.fill();
+      x.fillStyle='#000';x.font='bold 10px Orbitron';x.textAlign='center';x.fillText('COLOUR WHEEL',cx,cy+4);x.textAlign='left';
+    } else if(colMode==='spec'){
+      const gr=x.createLinearGradient(0,0,w,0);
+      const hues=[0,30,60,120,180,240,270,300];
+      hues.forEach((h2,i)=>gr.addColorStop(i/(hues.length-1),`hsl(${h2},100%,${50+12*Math.sin(t+i)}%)`));
+      x.fillStyle=gr;x.fillRect(0,0,w,h);
+      x.fillStyle='rgba(0,0,0,.5)';x.fillRect(0,h-28,w,28);
+      x.fillStyle='#fff';x.font='bold 11px Orbitron';x.textAlign='center';x.fillText('VISIBLE LIGHT SPECTRUM',w/2,h-10);x.textAlign='left';
+    } else if(colMode==='chan'){
+      x.fillStyle='#04040e';x.fillRect(0,0,w,h);
+      const cols=['#ff3355','#00ff88','#3388ff'];const names=['RED','GREEN','BLUE'];
+      cols.forEach((col,i)=>{
+        const bx=20+i*(w-40)/3,bw=(w-60)/3;
+        const gr=x.createLinearGradient(bx,20,bx+bw,20);
+        gr.addColorStop(0,'#050510');gr.addColorStop(.5+.2*Math.sin(t+i),col);
+        x.fillStyle=gr;x.fillRect(bx,20,bw,h-50);
+        x.strokeStyle=col;x.lineWidth=1.5;x.strokeRect(bx,20,bw,h-50);
+        x.fillStyle=col;x.font='bold 13px Orbitron';x.textAlign='center';x.fillText(names[i],bx+bw/2,h-14);x.textAlign='left';
+      });
+    }
+    requestAnimationFrame(draw);
+  })();
+}
+function colChan(ch,i){
+  const c=$('cv4'+ch),x=X('cv4'+ch);if(!c)return;
+  const cols=['#ff3355','#00ff88','#3388ff'];
+  (function draw(){
+    if(CUR!=='col')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    const gr=x.createLinearGradient(0,0,w,0);
+    gr.addColorStop(0,'#050510');gr.addColorStop(.4+.35*Math.sin(t*.8+i),cols[i]);gr.addColorStop(1,cols[i]);
+    x.fillStyle=gr;x.fillRect(0,0,w,h);
+    x.fillStyle='rgba(0,0,0,.35)';x.fillRect(0,0,w,16);
+    x.fillStyle=cols[i];x.font='9px Share Tech Mono';x.fillText(ch+': 0–255',3,11);
+    requestAnimationFrame(draw);
+  })();
 }
 
-// ─── CANVAS DEMOS ───
-function initCanvases(tab) {
-  if(tab==='pipeline') { setTimeout(animatePipeline, 100); drawAcquisition(); }
-  if(tab==='steps') { drawAcquisition(); drawEnhance(); drawRestore(); drawColorModel('rgb'); drawCompression(); drawSegment(); drawRecog(); }
-  if(tab==='lab') { drawLabAll('identity'); }
-  if(tab==='transform') { drawFreqPipeline(); drawThresh(128); }
-}
-
-// Acquisition canvas
-function drawAcquisition() {
-  const cv = document.getElementById('acq-canvas');
-  if(!cv) return;
-  const ctx = cv.getContext('2d');
-  const w=cv.width, h=cv.height;
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  // Continuous sine (analog)
-  ctx.beginPath();
-  ctx.strokeStyle='#00e5ff';ctx.lineWidth=2;
-  for(let x=0;x<w/2-10;x++){
-    const y = h/2 + Math.sin(x*0.12)*28;
-    x===0?ctx.moveTo(x+5,y):ctx.lineTo(x+5,y);
-  }
-  ctx.stroke();
-  ctx.fillStyle='#00e5ff44';ctx.font='11px Share Tech Mono';ctx.fillStyle='#00e5ff';
-  ctx.fillText('ANALOG SIGNAL',8,14);
-  // Sampled discrete
-  const sx=w/2+10;
-  ctx.fillStyle='#00ff8888';
-  for(let i=0;i<12;i++){
-    const y=h/2+Math.sin(i*0.8)*28;
-    const barH=h/2-y;
-    ctx.fillStyle='#00ff88';
-    ctx.fillRect(sx+i*15,y,10,Math.max(0,barH));
-    ctx.fillStyle='#00ff88';
-    ctx.beginPath();ctx.arc(sx+i*15+5,y,4,0,Math.PI*2);ctx.fill();
-  }
-  ctx.fillStyle='#00ff88';ctx.font='11px Share Tech Mono';ctx.fillText('SAMPLED+QUANTIZED',sx,14);
-  // Arrow
-  ctx.font='20px sans-serif';ctx.fillStyle='#ffe000';ctx.fillText('→',w/2-20,h/2+6);
-}
-
-// Enhancement
-function drawEnhance(brightness=0, contrast=1) {
-  const cv = document.getElementById('enhance-canvas');
-  if(!cv) return;
-  const ctx = cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  // Draw gradient bands simulating an image histogram
-  const grad = ctx.createLinearGradient(0,0,w,0);
-  grad.addColorStop(0,'#060616');
-  grad.addColorStop(0.5,`rgba(128,128,200,0.8)`);
-  grad.addColorStop(1,'#ffffff');
-  ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
-  // Apply brightness/contrast filter via overlay
-  ctx.globalAlpha = Math.abs(brightness)/200;
-  ctx.fillStyle = brightness>0?'#ffffff':'#000000';
-  ctx.fillRect(0,0,w,h);
-  ctx.globalAlpha=1;
-  // Labels
-  ctx.font='bold 12px Rajdhani';
-  ctx.fillStyle='#00ff88';
-  ctx.fillText(`Brightness: ${brightness>0?'+':''}${brightness}  |  Contrast: ${contrast.toFixed(1)}x`,10,20);
-  ctx.fillStyle='#4a5275';ctx.font='11px Share Tech Mono';
-  ctx.fillText('← DARK',8,h-6);ctx.fillText('BRIGHT →',w-70,h-6);
-}
-
-function updateEnhance() {
-  const b=parseInt(document.getElementById('bright-slider').value);
-  const c=parseFloat(document.getElementById('contrast-slider').value);
-  drawEnhance(b,c);
-}
-
-// Restore
-let restoreState='clean';
-function drawRestore(state='clean') {
-  const cv = document.getElementById('restore-canvas');
-  if(!cv) return;
-  const ctx = cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  // Draw shapes
-  const drawShapes = () => {
-    ctx.fillStyle='#00e5ff33';ctx.fillRect(20,20,80,80);
-    ctx.fillStyle='#ff00c833';ctx.beginPath();ctx.arc(160,60,35,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#00ff8833';ctx.beginPath();ctx.moveTo(220,25);ctx.lineTo(270,95);ctx.lineTo(170,95);ctx.closePath();ctx.fill();
-    ctx.fillStyle='#ffe00033';ctx.fillRect(290,25,70,70);
-  };
-  drawShapes();
-  if(state==='blur') {
-    ctx.filter='blur(4px)';ctx.drawImage(cv,0,0);ctx.filter='none';
-    ctx.fillStyle='#ff9500';ctx.font='12px Share Tech Mono';ctx.fillText('DEGRADED: BLUR APPLIED',10,h-8);
-  } else if(state==='noise') {
-    for(let i=0;i<800;i++){const x=Math.random()*w,y=Math.random()*h;ctx.fillStyle=`rgba(255,255,255,${Math.random()*.5})`;ctx.fillRect(x,y,2,2);}
-    ctx.fillStyle='#ff3355';ctx.font='12px Share Tech Mono';ctx.fillText('DEGRADED: NOISE ADDED',10,h-8);
-  } else if(state==='clean') {
-    ctx.strokeStyle='#00e5ff';ctx.lineWidth=1;ctx.strokeRect(20,20,80,80);
-    ctx.strokeStyle='#ff00c8';ctx.beginPath();ctx.arc(160,60,35,0,Math.PI*2);ctx.stroke();
-    ctx.strokeStyle='#00ff88';ctx.beginPath();ctx.moveTo(220,25);ctx.lineTo(270,95);ctx.lineTo(170,95);ctx.closePath();ctx.stroke();
-    ctx.strokeStyle='#ffe000';ctx.strokeRect(290,25,70,70);
-    ctx.fillStyle='#00ff88';ctx.font='12px Share Tech Mono';ctx.fillText('✅ RESTORED / ORIGINAL',10,h-8);
-  }
-}
-function addBlur(){restoreState='blur';drawRestore('blur');}
-function addNoise(){restoreState='noise';drawRestore('noise');}
-function restoreImg(){restoreState='clean';drawRestore('clean');addXP(10,'Used Restore Lab');}
-
-// Colour
-let colorMode='rgb';
-function drawColorModel(mode) {
-  colorMode=mode;
-  const cv=document.getElementById('colour-canvas');
-  if(!cv)return;
-  const ctx=cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  if(mode==='rgb'){
-    const circles=[{x:140,y:50,c:'rgba(255,0,0,0.6)',l:'R'},{x:200,y:50,c:'rgba(0,255,0,0.6)',l:'G'},{x:170,y:90,c:'rgba(0,0,255,0.6)',l:'B'}];
-    circles.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,40,0,Math.PI*2);ctx.fillStyle=c.c;ctx.fill();});
-    ctx.fillStyle='#fff';ctx.font='bold 16px Rajdhani';ctx.fillText('RGB ADDITIVE MODEL',240,40);
-    ctx.fillStyle='#b0b8d0';ctx.font='13px Rajdhani';ctx.fillText('Red + Green + Blue = White',240,65);ctx.fillText('Used in: screens, monitors, cameras',240,85);
-  } else if(mode==='cmy'){
-    const circles=[{x:140,y:50,c:'rgba(0,255,255,0.6)'},{x:200,y:50,c:'rgba(255,0,255,0.6)'},{x:170,y:90,c:'rgba(255,255,0,0.6)'}];
-    circles.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,40,0,Math.PI*2);ctx.fillStyle=c.c;ctx.fill();});
-    ctx.fillStyle='#fff';ctx.font='bold 16px Rajdhani';ctx.fillText('CMY SUBTRACTIVE MODEL',240,40);
-    ctx.fillStyle='#b0b8d0';ctx.font='13px Rajdhani';ctx.fillText('Cyan + Magenta + Yellow = Black',240,65);ctx.fillText('Used in: printers, ink',240,85);
+// ────────────────────────────────────────────
+// COMPRESSION
+// ────────────────────────────────────────────
+let cpMode='lossy',cpQ=32;
+const cpBars={orig:0,lossless:0,lossy:0};
+function compInit(){drawComp();compBarsLoop();}
+function CP(m){cpMode=m;gainXP(12,m,'b4');drawComp();}
+function CQ(v){cpQ=parseInt(v);$('ql').textContent='Q'+v;drawComp();}
+function drawComp(){
+  const c=$('cv5'),x=X('cv5');if(!c)return;
+  const w=c.width,h=c.height,t=Date.now()/1000;
+  x.clearRect(0,0,w,h);x.fillStyle='#04040e';x.fillRect(0,0,w,h);
+  const bs=Math.max(2,33-cpQ);
+  if(cpMode==='compare'){
+    // 3 panels
+    const pw=(w-20)/3;
+    // Original
+    for(let y=0;y<h-20;y+=5)for(let px=4;px<pw-4;px+=5){const v=Math.sin(px*.04+y*.05)*75+100;x.fillStyle=`rgb(${v|0},${(v*.82)|0},${(v*1.1)|0})`;x.fillRect(4+px,16+y,4,4);}
+    x.fillStyle='#00e5ff';x.font='9px Share Tech Mono';x.fillText('ORIGINAL',6,12);
+    // Lossless
+    for(let y=0;y<h-20;y+=5)for(let px=0;px<pw-4;px+=5){const v=Math.sin(px*.04+y*.05)*75+100;x.fillStyle=`rgb(${v|0},${(v*.82)|0},${(v*1.1)|0})`;x.fillRect(pw+10+px,16+y,4,4);}
+    x.fillStyle='#00ff88';x.fillText('LOSSLESS (PNG)',pw+10,12);
+    // Lossy
+    for(let y=0;y<h-20;y+=bs)for(let px=0;px<pw-4;px+=bs){const v=Math.sin(px*.04+y*.05)*75+100;x.fillStyle=`rgb(${v|0},${(v*.82)|0},${(v*1.1)|0})`;x.fillRect(pw*2+14+px,16+y,bs,bs);}
+    x.fillStyle=cpQ<10?'#ff3355':'#ffe000';x.fillText(`LOSSY Q${cpQ} (JPEG)`,pw*2+14,12);
   } else {
-    ['R','G','B'].forEach((ch,i)=>{
-      const colors=['#ff0000','#00ff00','#0000ff'];
-      const gradient = ctx.createLinearGradient(i*130+10,0,i*130+120,0);
-      gradient.addColorStop(0,'#060616');gradient.addColorStop(1,colors[i]);
-      ctx.fillStyle=gradient;ctx.fillRect(i*130+10,20,110,80);
-      ctx.fillStyle='#fff';ctx.font='bold 14px Orbitron';ctx.fillText(ch+' Channel',i*130+20,16);
+    // Left original, right compressed
+    for(let y=0;y<h;y+=5)for(let px=8;px<w/2-18;px+=5){const v=Math.sin(px*.04+y*.05)*75+100;x.fillStyle=`rgb(${v|0},${(v*.82)|0},${(v*1.1)|0})`;x.fillRect(8+px,y,4,4);}
+    x.fillStyle='#00e5ff';x.font='10px Share Tech Mono';x.fillText('ORIGINAL',10,14);
+    const sx=w/2+14;
+    for(let y=0;y<h;y+=bs)for(let px=0;px<w/2-22;px+=bs){const v=Math.sin(px*.04+y*.05)*75+100;x.fillStyle=`rgb(${v|0},${(v*.82)|0},${(v*1.1)|0})`;x.fillRect(sx+px,y,bs,bs);}
+    x.fillStyle=cpMode==='lossless'?'#00ff88':cpQ<10?'#ff3355':'#ffe000';
+    x.font='10px Share Tech Mono';x.fillText(cpMode==='lossless'?`LOSSLESS ✅`:`LOSSY Q${cpQ}`,sx,14);
+    x.fillStyle='#ffe000';x.font='22px sans';x.fillText('→',w/2-14,h/2+8);
+  }
+  $('cl5').textContent={lossy:`JPEG LOSSY — Q${cpQ}`,lossless:`PNG LOSSLESS — Q${cpQ}`,compare:'SIDE-BY-SIDE COMPARISON'}[cpMode]||cpMode;
+}
+function compBarsLoop(){
+  const c=$('cv5b'),x=X('cv5b');if(!c)return;
+  (function draw(){
+    if(CUR!=='comp')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    cpBars.orig=cpBars.orig*.88+100*.12;
+    cpBars.lossless=cpBars.lossless*.88+(60+4*Math.sin(t*.4))*.12;
+    cpBars.lossy=cpBars.lossy*.88+((cpQ/32)*90+6)*.12;
+    x.clearRect(0,0,w,h);x.fillStyle='#050510';x.fillRect(0,0,w,h);
+    [['orig','ORIGINAL','#4a5275'],['lossless','PNG LOSSLESS','#00ff88'],['lossy',`JPEG LOSSY Q${cpQ}`,'#ff3355']].forEach(([k,label,col],i)=>{
+      const bw=(w-100)*(cpBars[k]/100),y=8+i*22;
+      x.fillStyle='#0d0d24';x.fillRect(92,y,w-100,18);
+      const gr=x.createLinearGradient(92,y,92+bw,y);gr.addColorStop(0,col+'66');gr.addColorStop(1,col);
+      x.fillStyle=gr;x.fillRect(92,y,bw,18);
+      x.fillStyle=col;x.font='9px Share Tech Mono';x.fillText(label,0,y+13);
+      x.fillStyle='rgba(255,255,255,.75)';x.fillText(`${cpBars[k].toFixed(0)}%`,94+bw,y+13);
     });
-  }
-}
-function showColorModel(m){drawColorModel(m);addXP(8,'Explored Colour Model');}
-
-// Compression
-function drawCompression(q=20) {
-  const cv=document.getElementById('compress-canvas');
-  if(!cv)return;
-  const ctx=cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  const blockSize = Math.max(2, 22-q);
-  const half=w/2-20;
-  // Original
-  for(let y=0;y<h;y+=8){for(let x=0;x<half;x+=8){
-    const v=Math.sin(x*0.05+y*0.07)*60+100;
-    ctx.fillStyle=`rgb(${v|0},${(v*0.8)|0},${(v*1.2)|0})`;
-    ctx.fillRect(x,y,8,8);
-  }}
-  ctx.fillStyle='rgba(0,229,255,0.9)';ctx.font='11px Share Tech Mono';ctx.fillText('ORIGINAL',6,14);
-  // Compressed (blockier)
-  for(let y=0;y<h;y+=blockSize){for(let x=0;x<half;x+=blockSize){
-    const v=Math.sin(x*0.05+y*0.07)*60+100;
-    ctx.fillStyle=`rgb(${v|0},${(v*0.8)|0},${(v*1.2)|0})`;
-    ctx.fillRect(half+30+x,y,blockSize,blockSize);
-  }}
-  ctx.fillStyle= q>10?'rgba(0,255,136,0.9)':'rgba(255,51,85,0.9)';
-  ctx.font='11px Share Tech Mono';
-  ctx.fillText(q>10?`LOSSLESS Q:${q}`:`LOSSY Q:${q}`,half+36,14);
-  ctx.fillStyle='#ffe000';ctx.font='20px sans-serif';ctx.fillText('→',half,h/2);
-}
-function updateCompression(){
-  const q=parseInt(document.getElementById('quality-slider').value);
-  document.getElementById('quality-label').textContent=`Q:${q}`;
-  drawCompression(q);
+    x.fillStyle='rgba(255,224,0,.6)';x.font='9px Share Tech Mono';x.fillText('FILE SIZE (relative %) →',w/2-55,h-3);
+    requestAnimationFrame(draw);
+  })();
 }
 
-// Segmentation
-let segAnim=null,segPhase=0;
-function drawSegment(phase=0) {
-  const cv=document.getElementById('segment-canvas');
-  if(!cv)return;
-  const ctx=cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  // Background noise
-  for(let i=0;i<500;i++){ctx.fillStyle=`rgba(30,40,60,${Math.random()})`;ctx.fillRect(Math.random()*w,Math.random()*h,4,4);}
-  // Objects
-  ctx.fillStyle='#2a3a6a';ctx.fillRect(20,20,80,80);
-  ctx.fillStyle='#1a2a4a';ctx.beginPath();ctx.arc(200,60,40,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#2a2a5a';ctx.beginPath();ctx.moveTo(300,20);ctx.lineTo(360,100);ctx.lineTo(240,100);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#1a3a3a';ctx.fillRect(310,25,60,65);
-  if(phase>0.2){ctx.strokeStyle=`rgba(0,229,255,${Math.min(1,(phase-0.2)*3)})`;ctx.lineWidth=3;ctx.strokeRect(20,20,80,80);}
-  if(phase>0.5){ctx.strokeStyle=`rgba(0,255,136,${Math.min(1,(phase-0.5)*3)})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(200,60,40,0,Math.PI*2);ctx.stroke();}
-  if(phase>0.7){ctx.strokeStyle=`rgba(255,0,200,${Math.min(1,(phase-0.7)*4)})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(300,20);ctx.lineTo(360,100);ctx.lineTo(240,100);ctx.closePath();ctx.stroke();}
-  if(phase>0.85){ctx.strokeStyle=`rgba(255,224,0,${Math.min(1,(phase-0.85)*6)})`;ctx.lineWidth=3;ctx.strokeRect(310,25,60,65);}
-  if(phase>=1){ctx.fillStyle='#00ff88';ctx.font='11px Share Tech Mono';ctx.fillText('✅ 4 REGIONS SEGMENTED',10,h-8);}
+// ────────────────────────────────────────────
+// SEGMENTATION
+// ────────────────────────────────────────────
+let sMode='none',sProg=0,sAnimRaf=null;
+function segInit(){drawSegIn();segOutLoop();segProgLoop();}
+function drawSegIn(){
+  const c=$('cv6a'),x=X('cv6a');if(!c)return;
+  const w=c.width,h=c.height;
+  x.fillStyle='#080820';x.fillRect(0,0,w,h);
+  for(let i=0;i<1200;i++){x.fillStyle=`rgba(28,36,72,${Math.random()*.7})`;x.fillRect(Math.random()*w,Math.random()*h,3,3);}
+  x.fillStyle='#182858';x.fillRect(12,12,76,64);
+  x.fillStyle='#381850';x.beginPath();x.arc(150,65,42,0,Math.PI*2);x.fill();
+  x.fillStyle='#183a20';x.beginPath();x.moveTo(180,12);x.lineTo(240,96);x.lineTo(120,96);x.closePath();x.fill();
+  x.fillStyle='#3a2a12';x.fillRect(188,18,58,60);
+  x.fillStyle='rgba(0,229,255,.65)';x.font='9px Share Tech Mono';x.fillText('INPUT IMAGE',3,11);
 }
-function runSegmentation(){
-  if(segAnim)clearInterval(segAnim);
-  segPhase=0;
-  segAnim=setInterval(()=>{
-    segPhase=Math.min(1,segPhase+0.02);
-    drawSegment(segPhase);
-    if(segPhase>=1){clearInterval(segAnim);addXP(12,'Ran Segmentation');}
-  },30);
-}
-function resetSegment(){if(segAnim)clearInterval(segAnim);segPhase=0;drawSegment(0);}
-
-// Recognition
-function drawRecog() {
-  const cv=document.getElementById('recog-canvas');
-  if(!cv)return;
-  const ctx=cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  // Face outline
-  ctx.strokeStyle='#00e5ff';ctx.lineWidth=2;
-  ctx.beginPath();ctx.ellipse(70,60,35,45,0,0,Math.PI*2);ctx.stroke();
-  // Eyes
-  ctx.beginPath();ctx.arc(57,48,6,0,Math.PI*2);ctx.fillStyle='#00e5ff44';ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.arc(83,48,6,0,Math.PI*2);ctx.fill();ctx.stroke();
-  // Feature points
-  const pts=[[57,48],[83,48],[70,60],[60,72],[80,72],[70,40]];
-  let t=Date.now()/1000;
-  pts.forEach((p,i)=>{
-    const pulse=0.5+0.5*Math.sin(t*3+i);
-    ctx.beginPath();ctx.arc(p[0],p[1],4,0,Math.PI*2);
-    ctx.fillStyle=`rgba(255,224,0,${pulse})`;ctx.fill();
-    ctx.strokeStyle='#ffe000';ctx.lineWidth=1;ctx.stroke();
-  });
-  // Lines connecting
-  ctx.strokeStyle='#ffe00044';ctx.lineWidth=1;
-  pts.forEach((p,i)=>{if(i<pts.length-1){ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(pts[i+1][0],pts[i+1][1]);ctx.stroke();}});
-  // Labels panel
-  const labels=['FACE','CAT','MASK','ROBOT'];
-  const confs=[0.97,0.01,0.01,0.01];
-  ctx.fillStyle='#fff';ctx.font='bold 11px Orbitron';ctx.fillText('RECOGNITION',140,18);
-  labels.forEach((l,i)=>{
-    const bar=confs[i]*120;
-    ctx.fillStyle='#1a1a3e';ctx.fillRect(140,30+i*22,120,14);
-    ctx.fillStyle=i===0?'#00ff88':'#2a2a4e';ctx.fillRect(140,30+i*22,bar,14);
-    ctx.fillStyle=i===0?'#00ff88':'#4a5275';ctx.font='10px Rajdhani';
-    ctx.fillText(`${l}: ${(confs[i]*100).toFixed(0)}%`,268,42+i*22);
-  });
-  requestAnimationFrame(drawRecog);
-}
-
-// ─── LAB ───
-function drawLabAll(transform) {
-  drawLabInput();
-  drawLabOutput(transform);
-  drawLabCurve(transform);
-}
-
-function drawLabInput() {
-  const cv=document.getElementById('lab-input');
-  if(!cv)return;
-  const ctx=cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  // Gradient gradient image
-  for(let x=0;x<w;x++){
-    const v=Math.floor((x/w)*255);
-    ctx.fillStyle=`rgb(${v},${v},${v})`;
-    ctx.fillRect(x,0,1,h/2);
-  }
-  // Checkerboard-ish scene
-  for(let y=h/2;y<h;y+=10){
-    for(let x=0;x<w;x+=10){
-      const v=(x+y)%20===0?30:180;
-      ctx.fillStyle=`rgb(${v},${v},${Math.min(255,v+40)})`;
-      ctx.fillRect(x,y,10,10);
+function segOutLoop(){
+  const c=$('cv6b'),x=X('cv6b');if(!c)return;
+  (function draw(){
+    if(CUR!=='seg')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);x.fillStyle='#060615';x.fillRect(0,0,w,h);
+    if(sMode==='none'){x.fillStyle='#3a4060';x.font='11px Share Tech Mono';x.textAlign='center';x.fillText('PRESS BUTTON',w/2,h/2);x.textAlign='left';}
+    else{
+      const p=sProg;
+      const regs=[
+        {fn:()=>{x.fillStyle='#00e5ff22';x.fillRect(12,12,76,64);x.strokeStyle='#00e5ff';x.lineWidth=2+.5*Math.sin(t*3);x.strokeRect(12,12,76,64);},col:'#00e5ff'},
+        {fn:()=>{x.fillStyle='#ff00c822';x.beginPath();x.arc(150,65,42,0,Math.PI*2);x.fill();x.strokeStyle='#ff00c8';x.lineWidth=2+.5*Math.sin(t*3+1);x.beginPath();x.arc(150,65,42,0,Math.PI*2);x.stroke();},col:'#ff00c8'},
+        {fn:()=>{x.fillStyle='#00ff8822';x.beginPath();x.moveTo(180,12);x.lineTo(240,96);x.lineTo(120,96);x.closePath();x.fill();x.strokeStyle='#00ff88';x.lineWidth=2+.5*Math.sin(t*3+2);x.stroke();},col:'#00ff88'},
+        {fn:()=>{x.fillStyle='#ffe00022';x.fillRect(188,18,58,60);x.strokeStyle='#ffe000';x.lineWidth=2+.5*Math.sin(t*3+3);x.strokeRect(188,18,58,60);},col:'#ffe000'}
+      ];
+      regs.forEach((r,i)=>{
+        const a=Math.min(1,Math.max(0,(p-i*.22)*4));
+        if(a<=0)return;
+        x.globalAlpha=a;
+        x.shadowBlur=10*a;x.shadowColor=r.col;
+        r.fn();x.shadowBlur=0;x.globalAlpha=1;
+        if(sMode==='medical'&&p>i*.22+.1){
+          const labels=['BONE','ORGAN','VESSEL','TISSUE'];
+          const lxs=[20,120,150,198];const lys=[30,60,55,35];
+          x.fillStyle=r.col;x.font='8px Orbitron';x.fillText(labels[i],lxs[i],lys[i]);
+        }
+        if(sMode==='edge'&&p>.6){
+          x.strokeStyle='rgba(255,255,255,.5)';x.lineWidth=1;
+          x.strokeRect(12,12,76,64);x.beginPath();x.arc(150,65,42,0,Math.PI*2);x.stroke();
+          x.beginPath();x.moveTo(180,12);x.lineTo(240,96);x.lineTo(120,96);x.closePath();x.stroke();
+        }
+      });
+      if(p<1){const sy=p*h;x.strokeStyle='rgba(0,255,136,.8)';x.lineWidth=1.5;x.shadowBlur=8;x.shadowColor='#00ff88';x.setLineDash([4,4]);x.beginPath();x.moveTo(0,sy);x.lineTo(w,sy);x.stroke();x.setLineDash([]);x.shadowBlur=0;}
     }
-  }
-  ctx.fillStyle='rgba(0,229,255,0.8)';ctx.font='11px Share Tech Mono';ctx.fillText('INPUT r',4,12);
+    $('cl6').textContent={thresh:'THRESHOLD SCAN',region:'REGION GROWING',edge:'EDGE DETECTION',medical:'MEDICAL SEGMENTATION',none:'PRESS A BUTTON'}[sMode]||sMode;
+    requestAnimationFrame(draw);
+  })();
+}
+function segProgLoop(){
+  const c=$('cv6c'),x=X('cv6c');if(!c)return;
+  (function draw(){
+    if(CUR!=='seg')return;
+    const w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);x.fillStyle='#050510';x.fillRect(0,0,w,h);
+    const bw=(w-16)*sProg;
+    x.fillStyle='#0d0d24';x.fillRect(8,8,w-16,h-16);
+    const gr=x.createLinearGradient(8,0,8+bw,0);
+    gr.addColorStop(0,'#00e5ff');gr.addColorStop(.5,'#ff00c8');gr.addColorStop(1,'#00ff88');
+    x.fillStyle=gr;x.fillRect(8,8,bw,h-16);
+    x.fillStyle='rgba(255,255,255,.8)';x.font='10px Orbitron';x.textAlign='center';x.fillText(`${(sProg*100)|0}%`,w/2,h/2+4);x.textAlign='left';
+    requestAnimationFrame(draw);
+  })();
+}
+function S(m){
+  if(sAnimRaf)cancelAnimationFrame(sAnimRaf);
+  if(m==='reset'){sMode='none';sProg=0;return;}
+  sMode=m;sProg=0;gainXP(12,m,'b5');
+  (function step(){
+    sProg=Math.min(1,sProg+.013);
+    if(sProg<1)sAnimRaf=requestAnimationFrame(step);
+    else achieve('🧩','Segmented!','All regions found!');
+  })();
 }
 
-function applyTransform(r, transform) {
-  const L=255;
-  switch(transform) {
-    case 'identity': return r;
-    case 'negative': return L-r;
-    case 'log': return Math.min(255, Math.round(45*Math.log(1+r)));
-    case 'power': {
-      const g=parseFloat(document.getElementById('gamma-slider').value);
-      return Math.min(255,Math.round(255*Math.pow(r/255,g)));
+// ────────────────────────────────────────────
+// RECOGNITION
+// ────────────────────────────────────────────
+let rgState='idle',rgProg=0;
+const rgLbls=['HUMAN FACE','CAT','MASK','ROBOT','ALIEN'];
+const rgConfs=[0,0,0,0,0],rgTgts=[0,0,0,0,0];
+function recogInit(){rgFaceLoop();rgBarsLoop();}
+function RG(m){
+  rgState=m;gainXP(12,m,'b6');
+  if(m==='scan')rgProg=0;
+  if(m==='feat')rgTgts.fill(0);
+  if(m==='match'){rgTgts[0]=.6;rgTgts[1]=.2;rgTgts[2]=.1;rgTgts[3]=.07;rgTgts[4]=.03;}
+  if(m==='class'){rgTgts[0]=.97;rgTgts[1]=.01;rgTgts[2]=.01;rgTgts[3]=.005;rgTgts[4]=.005;achieve('🤖','Classified!','Pattern match complete!');}
+  $('cl7').textContent={idle:'STANDBY',scan:'SCANNING...',feat:'EXTRACTING FEATURES',match:'PATTERN MATCHING',class:'CLASSIFIED ✅'}[m]||m;
+}
+function rgFaceLoop(){
+  const c=$('cv7a'),x=X('cv7a');if(!c)return;
+  const fPts=[[c.width*.37,c.height*.33],[c.width*.57,c.height*.33],[c.width*.47,c.height*.47],[c.width*.38,c.height*.62],[c.width*.57,c.height*.62],[c.width*.47,c.height*.22]];
+  (function draw(){
+    if(CUR!=='recog')return;
+    const t=Date.now()/1000,w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);x.fillStyle='#04040e';x.fillRect(0,0,w,h);
+    const pulse=.5+.5*Math.sin(t*2);
+    x.strokeStyle=`rgba(0,229,255,${.45+.55*pulse})`;x.lineWidth=2;x.shadowBlur=7*pulse;x.shadowColor='#00e5ff';
+    x.beginPath();x.ellipse(w*.47,h*.49,w*.22,h*.38,0,0,Math.PI*2);x.stroke();
+    x.beginPath();x.arc(w*.38,h*.41,w*.055,0,Math.PI*2);x.stroke();
+    x.beginPath();x.arc(w*.57,h*.41,w*.055,0,Math.PI*2);x.stroke();
+    x.shadowBlur=0;
+    if(rgState==='scan'){
+      rgProg=Math.min(1,rgProg+.007);
+      const sy=rgProg*h;
+      x.strokeStyle=`rgba(0,255,136,${.6+.4*pulse})`;x.lineWidth=2;x.shadowBlur=10;x.shadowColor='#00ff88';
+      x.setLineDash([4,4]);x.beginPath();x.moveTo(0,sy);x.lineTo(w,sy);x.stroke();x.setLineDash([]);x.shadowBlur=0;
+      [[0,0],[w-18,0],[0,h-18],[w-18,h-18]].forEach(([bx,by])=>{
+        x.strokeStyle='#00ff88';x.lineWidth=2;x.beginPath();
+        const dx=bx===0?16:-16,dy=by===0?16:-16;
+        x.moveTo(bx,by+dy*.7);x.lineTo(bx,by);x.lineTo(bx+dx*.7,by);x.stroke();
+      });
     }
-    case 'threshold': {
-      const k=parseInt(document.getElementById('thresh-slider')?document.getElementById('thresh-slider').value:128);
-      return r<=k?0:255;
+    if(rgState==='feat'){
+      fPts.forEach((p,i)=>{const pp=.5+.5*Math.sin(t*4+i);x.beginPath();x.arc(p[0],p[1],5,0,Math.PI*2);x.fillStyle=`rgba(255,224,0,${pp})`;x.shadowBlur=8*pp;x.shadowColor='#ffe000';x.fill();x.shadowBlur=0;});
+      x.strokeStyle='rgba(255,224,0,.4)';x.lineWidth=1;
+      fPts.forEach((p,i)=>{if(i<fPts.length-1){x.beginPath();x.moveTo(p[0],p[1]);x.lineTo(fPts[i+1][0],fPts[i+1][1]);x.stroke();}});
     }
-    default: return r;
-  }
+    if(rgState==='match'||rgState==='class'){
+      const col=rgState==='class'?'#00ff88':'#ffe000';
+      x.strokeStyle=col;x.lineWidth=2.5;x.shadowBlur=12;x.shadowColor=col;
+      x.strokeRect(w*.2,h*.09,w*.54,h*.78);x.shadowBlur=0;
+      x.fillStyle=col;x.font='9px Orbitron';x.fillText(rgState==='class'?'FACE ✅ 97%':'MATCHING...',w*.2,h*.07);
+    }
+    requestAnimationFrame(draw);
+  })();
+}
+function rgBarsLoop(){
+  const c=$('cv7b'),x=X('cv7b');if(!c)return;
+  (function draw(){
+    if(CUR!=='recog')return;
+    const w=c.width,h=c.height;
+    x.clearRect(0,0,w,h);x.fillStyle='#050510';x.fillRect(0,0,w,h);
+    rgLbls.forEach((label,i)=>{
+      rgConfs[i]=rgConfs[i]*.88+rgTgts[i]*.12;
+      const bw=(w-76)*rgConfs[i],y=14+i*34;
+      x.fillStyle='#0d0d24';x.fillRect(68,y,w-76,26);
+      const col=i===0?'#00ff88':'#2a3250';
+      x.fillStyle=col;x.fillRect(68,y,bw,26);
+      x.fillStyle=i===0?'#00ff88':'#4a5275';x.font='8px Share Tech Mono';x.fillText(label,0,y+16);
+      x.fillStyle='rgba(255,255,255,.8)';x.fillText(`${(rgConfs[i]*100).toFixed(0)}%`,70+bw,y+16);
+    });
+    x.fillStyle='rgba(0,229,255,.55)';x.font='8px Share Tech Mono';x.textAlign='center';x.fillText('CONFIDENCE',w/2,h-4);x.textAlign='left';
+    requestAnimationFrame(draw);
+  })();
 }
 
-function drawLabOutput(transform) {
-  const cvIn=document.getElementById('lab-input');
-  const cvOut=document.getElementById('lab-output');
-  if(!cvOut||!cvIn)return;
-  const ctxIn=cvIn.getContext('2d');
-  const ctxOut=cvOut.getContext('2d');
-  const w=cvOut.width,h=cvOut.height;
-  ctxOut.clearRect(0,0,w,h);
-  const imgData=ctxIn.getImageData(0,0,w,h);
-  const out=ctxOut.createImageData(w,h);
-  for(let i=0;i<imgData.data.length;i+=4){
-    const r=imgData.data[i];
-    const s=applyTransform(r,transform);
-    out.data[i]=out.data[i+1]=out.data[i+2]=s;
-    out.data[i+3]=255;
-  }
-  ctxOut.putImageData(out,0,0);
-  ctxOut.fillStyle='rgba(255,224,0,0.8)';ctxOut.font='11px Share Tech Mono';ctxOut.fillText('OUTPUT s',4,12);
-}
-
-function drawLabCurve(transform) {
-  const cv=document.getElementById('lab-curve');
-  if(!cv)return;
-  const ctx=cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);
-  ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  // Grid
-  ctx.strokeStyle='#1a1a3e';ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){
-    const x=40+i*(w-50)/4, y=10+i*(h-50)/4;
-    ctx.beginPath();ctx.moveTo(x,10);ctx.lineTo(x,h-40);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(w-10,y);ctx.stroke();
-  }
-  // Axes
-  ctx.strokeStyle='#4a5275';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(40,h-40);ctx.lineTo(w-10,h-40);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(40,h-40);ctx.lineTo(40,10);ctx.stroke();
-  ctx.fillStyle='#4a5275';ctx.font='11px Share Tech Mono';
-  ctx.fillText('0',32,h-38);ctx.fillText('L-1',w-26,h-38);
-  ctx.fillText('r',w-10,h-38);ctx.fillText('s',28,16);
-  // Curve
-  const colors={identity:'#00e5ff',negative:'#ff3355',log:'#00ff88',power:'#ff9500',threshold:'#ffe000'};
-  ctx.strokeStyle=colors[transform]||'#00e5ff';ctx.lineWidth=3;
-  ctx.shadowBlur=8;ctx.shadowColor=ctx.strokeStyle;
-  ctx.beginPath();
-  for(let r=0;r<=255;r++){
-    const s=applyTransform(r,transform);
-    const x=40+(r/255)*(w-60);
-    const y=(h-40)-(s/255)*(h-50);
-    r===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  }
-  ctx.stroke();ctx.shadowBlur=0;
-  ctx.fillStyle=colors[transform];ctx.font='bold 12px Orbitron';
-  ctx.fillText(transform.toUpperCase()+' TRANSFORM',w/2-60,h-6);
-}
-
-const transformInfos = {
-  identity:{title:'Identity Transform',text:'s = r. Output equals input exactly. The diagonal line in the graph. No change to pixel values — used as a reference baseline for comparing other transforms.'},
-  negative:{title:'Negative Transform (L-1-r)',text:'s = L-1-r. Inverts all intensities. Dark pixels become bright, bright become dark — like a film negative. Useful for enhancing white detail in dark regions of medical X-ray images.'},
-  log:{title:'Log Transformation',text:'s = c·log(1+r). Compresses high-intensity values and expands low-intensity values. Makes dark regions more visible. Commonly used to display Fourier spectrum. Inverse log does the opposite.'},
-  power:{title:'Power Law / Gamma Correction',text:'s = c·r^γ. When γ < 1: brightens the image (useful for dark images). When γ > 1: darkens the image. Critical for display calibration — CRT monitors had built-in gamma of ≈2.2.'},
-  threshold:{title:'Threshold Transform',text:'Creates a binary image. Pixels ≤ K become 0 (black); pixels > K become 255 (white). Simple but powerful for separating objects from background in controlled lighting conditions.'}
+// ────────────────────────────────────────────
+// LAB
+// ────────────────────────────────────────────
+let labMode='identity',labG=2,labK=128;
+const labInfo={
+  identity:{t:'Identity: s = r',b:'Output equals input — no change. The diagonal line is the baseline reference. Every pixel value passes unchanged. Used to compare other transforms.'},
+  negative:{t:'Negative: s = (L-1) − r',b:'Inverts all intensities. s = 255 − r. Bright→Dark, Dark→Bright. Like a film negative. Useful in medical X-rays to enhance white detail in dark regions.'},
+  log:{t:'Log Transform: s = c·log(1+r)',b:'Compresses high intensities, expands dark ones. Narrow range of dark pixels → wide output range. Used to display Fourier spectrum. Inverse-log does the opposite.'},
+  power:{t:'Power Law: s = c·rᵞ (Gamma Correction)',b:'γ<1: maps dark to brighter output (brightens). γ>1: darkens. γ=1: identity. CRT monitors had built-in gamma ≈2.2 requiring correction in images.'},
+  threshold:{t:'Threshold: Binary Image',b:'s = 0 if r ≤ K (black); s = 255 if r > K (white). Creates binary output. K = threshold value. Simple & powerful for controlled-lighting segmentation.'},
+  contrast:{t:'Contrast Stretching',b:'Linearly expands intensity range [rmin, rmax] → [0, 255]. s = (r − rmin)/(rmax − rmin) × 255. Makes low-contrast images fully visible.'}
 };
-
-function setTransform(t) {
-  document.querySelectorAll('[id^="btn-"]').forEach(b=>b.classList.remove('active-btn'));
-  document.getElementById('btn-'+t).classList.add('active-btn');
-  document.getElementById('gamma-ctrl').style.display = t==='power'?'block':'none';
-  drawLabAll(t);
-  const info=transformInfos[t];
-  document.getElementById('transform-info').innerHTML=`<h3 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;">${info.title}</h3><p style="color:#b0b8d0;font-size:1rem;line-height:1.6;">${info.text}</p>`;
-  addXP(8, info.title);
-  document.getElementById('gamma-val').textContent=parseFloat(document.getElementById('gamma-slider').value).toFixed(1);
+function labInit(){drawLabIn();LB('identity',document.getElementById('lb0'));}
+function drawLabIn(){
+  const c=$('cv8a'),x=X('cv8a');if(!c)return;
+  const w=c.width,h=c.height;
+  for(let px=0;px<w;px++){const v=(px/w*255)|0;x.fillStyle=`rgb(${v},${v},${v})`;x.fillRect(px,0,1,h/2);}
+  for(let py=h/2;py<h;py+=10)for(let px=0;px<w;px+=10){const v=(((px/10|0)+(py/10|0))%2===0?215:42);x.fillStyle=`rgb(${v},${v},${(v*.9+24)|0})`;x.fillRect(px,py,10,10);}
 }
-
-// ─── FREQUENCY DOMAIN ───
-function drawFreqPipeline() {
-  const cv=document.getElementById('freq-canvas');
-  if(!cv)return;
-  const ctx=cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  const steps=[
-    {label:'Spatial\nImage',color:'#00e5ff'},
-    {label:'Forward\nTransform',color:'#ff9500'},
-    {label:'Filter\n(Freq.)',color:'#ff00c8'},
-    {label:'Inverse\nTransform',color:'#ff9500'},
-    {label:'Output\nImage',color:'#00ff88'}
-  ];
-  const sw=w/(steps.length+1);
-  steps.forEach((s,i)=>{
-    const x=sw*(i+0.5)+10;
-    ctx.fillStyle=s.color+'33';ctx.strokeStyle=s.color;ctx.lineWidth=2;
-    ctx.beginPath();ctx.roundRect(x-35,10,70,60,8);ctx.fill();ctx.stroke();
-    ctx.fillStyle=s.color;ctx.font='10px Share Tech Mono';ctx.textAlign='center';
-    s.label.split('\n').forEach((l,li)=>ctx.fillText(l,x,28+li*14));
-    if(i<steps.length-1){
-      ctx.strokeStyle='#4a5275';ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(x+35,40);ctx.lineTo(x+sw-30,40);ctx.stroke();
-      ctx.fillStyle='#4a5275';ctx.textAlign='left';ctx.fillText('→',x+sw-34,44);
-    }
-  });
-  ctx.textAlign='left';
+function LB(mode,btn){
+  document.querySelectorAll('[id^="lb"]').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');labMode=mode;
+  $('gr').style.display=mode==='power'?'flex':'none';
+  $('kr').style.display=mode==='threshold'?'flex':'none';
+  const info=labInfo[mode];$('lt').textContent=info.t;$('lb').textContent=info.b;
+  gainXP(8,info.t.split(':')[0]);
+  drawLabOut();animLabCurve();
 }
-
-// ─── THRESHOLD ───
-function drawThresh(k) {
-  const cv=document.getElementById('thresh-canvas');
-  if(!cv)return;
-  const ctx=cv.getContext('2d');
-  const w=cv.width,h=cv.height;
-  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
-  // Left: gradient
-  for(let x=0;x<w/2-10;x++){
-    const v=Math.floor((x/(w/2-10))*255);
-    ctx.fillStyle=`rgb(${v},${v},${v})`;
-    ctx.fillRect(x,0,1,h);
+function UG(){labG=parseFloat($('gs').value);$('gv').textContent=labG.toFixed(1);drawLabOut();animLabCurve();}
+function UK(){labK=parseInt($('ks').value);$('kv').textContent=labK;drawLabOut();animLabCurve();}
+function applyT(r){
+  switch(labMode){
+    case 'identity':return r;
+    case 'negative':return 255-r;
+    case 'log':return Math.min(255,(45*Math.log(1+r))|0);
+    case 'power':return Math.min(255,(255*Math.pow(r/255,labG))|0);
+    case 'threshold':return r<=labK?0:255;
+    case 'contrast':{const mn=25,mx=205;return Math.min(255,Math.max(0,((r-mn)/(mx-mn)*255)|0));}
   }
-  // Right: thresholded
-  const sx=w/2+10;
-  for(let x=0;x<w/2-10;x++){
-    const v=Math.floor((x/(w/2-10))*255);
-    ctx.fillStyle=v<=k?'#000000':'#ffffff';
-    ctx.fillRect(sx+x,0,1,h);
-  }
-  // Threshold line
-  const tx=(k/255)*(w/2-10);
-  ctx.strokeStyle='#ff3355';ctx.lineWidth=2;
-  ctx.setLineDash([4,4]);
-  ctx.beginPath();ctx.moveTo(tx,0);ctx.lineTo(tx,h);ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle='#ff3355';ctx.font='11px Share Tech Mono';ctx.fillText('← 0 (black)','sx+2',14);
-  // Labels
-  ctx.fillStyle='#00e5ff';ctx.font='10px Share Tech Mono';ctx.fillText('ORIGINAL',4,14);
-  ctx.fillStyle='#ffe000';ctx.fillText('BINARY',sx+4,14);
-  ctx.fillStyle='#ff3355';ctx.fillText(`K=${k}`,tx-10,h-4);
 }
-function updateThresh() {
-  const k=parseInt(document.getElementById('thresh-slider').value);
-  document.getElementById('thresh-val').textContent=`K=${k}`;
-  drawThresh(k);
+function drawLabOut(){
+  const ci=$('cv8a'),co=$('cv8b');if(!ci||!co)return;
+  const xi=ci.getContext('2d'),xo=co.getContext('2d'),w=co.width,h=co.height;
+  const id=xi.getImageData(0,0,w,h),od=xo.createImageData(w,h);
+  for(let i=0;i<id.data.length;i+=4){const s=applyT(id.data[i]);od.data[i]=od.data[i+1]=od.data[i+2]=s;od.data[i+3]=255;}
+  xo.putImageData(od,0,0);
+}
+let curveDrawn=[];
+function animLabCurve(){
+  curveDrawn=Array.from({length:256},(_,r)=>applyT(r));
+  let up=0;
+  (function step(){
+    up=Math.min(256,up+7);drawCurve(up);
+    if(up<256)requestAnimationFrame(step);
+  })();
+}
+const colsLab={identity:'#00e5ff',negative:'#ff3355',log:'#00ff88',power:'#ff9500',threshold:'#ffe000',contrast:'#ff00c8'};
+function drawCurve(up=256){
+  const c=$('cv8c'),x=X('cv8c');if(!c)return;
+  const w=c.width,h=c.height;
+  x.clearRect(0,0,w,h);x.fillStyle='#030310';x.fillRect(0,0,w,h);
+  x.strokeStyle='#0d0d24';x.lineWidth=1;
+  for(let i=0;i<=4;i++){const gx=42+i*(w-54)/4,gy=12+i*(h-44)/4;x.beginPath();x.moveTo(gx,12);x.lineTo(gx,h-32);x.stroke();x.beginPath();x.moveTo(42,gy);x.lineTo(w-10,gy);x.stroke();}
+  x.strokeStyle='#222244';x.lineWidth=2;x.beginPath();x.moveTo(42,h-32);x.lineTo(w-10,h-32);x.stroke();x.beginPath();x.moveTo(42,h-32);x.lineTo(42,12);x.stroke();
+  x.fillStyle='#3a4060';x.font='9px Share Tech Mono';x.fillText('0',30,h-30);x.fillText('r',w-10,h-30);x.fillText('s',28,16);
+  x.setLineDash([3,6]);x.strokeStyle='#1a1a3a';x.lineWidth=1;x.beginPath();x.moveTo(42,h-32);x.lineTo(w-10,12);x.stroke();x.setLineDash([]);
+  const col=colsLab[labMode]||'#00e5ff';
+  x.strokeStyle=col;x.lineWidth=3;x.shadowBlur=14;x.shadowColor=col;x.beginPath();
+  for(let r=0;r<Math.min(up,255);r++){
+    const s=curveDrawn[r]||0;const px=42+(r/255)*(w-56),py=(h-32)-(s/255)*(h-44);
+    r===0?x.moveTo(px,py):x.lineTo(px,py);
+  }
+  x.stroke();x.shadowBlur=0;
+  if(up<256){const r=up,s=curveDrawn[r]||0,px=42+(r/255)*(w-56),py=(h-32)-(s/255)*(h-44);x.beginPath();x.arc(px,py,6,0,Math.PI*2);x.fillStyle=col;x.shadowBlur=18;x.shadowColor=col;x.fill();x.shadowBlur=0;}
+  x.fillStyle=col;x.font='bold 10px Orbitron';x.textAlign='center';x.fillText(labMode.toUpperCase()+' TRANSFORM',w/2,h-6);x.textAlign='left';
+  $('cl8').textContent=labInfo[labMode]?.t||'CURVE';
 }
 
-// ─── QUIZ ───
-const questions=[
-  {q:'What is the FIRST step in the digital image processing pipeline?',opts:['Image Enhancement','Image Restoration','Image Acquisition','Image Segmentation'],ans:2,exp:'Image Acquisition is always the first step — you need to capture/digitize the image before any processing can occur!'},
-  {q:'Image Enhancement is considered a ________ process.',opts:['Objective','Mathematical','Subjective','Statistical'],ans:2,exp:'Enhancement is SUBJECTIVE — it depends on what looks good to the human observer. There\'s no single "correct" enhanced image.'},
-  {q:'Which formula describes intensity transformation?',opts:['s = f(x,y)','s = T(r)','g = F(u,v)','r = T(s)'],ans:1,exp:'s = T(r) where r is input intensity, s is output intensity, and T is the transformation function applied to each pixel.'},
-  {q:'JPEG compression is which type?',opts:['Lossless','Reversible','Lossy','Lossless+Lossy'],ans:2,exp:'JPEG is LOSSY — data is permanently discarded to achieve higher compression. PNG is lossless (no data lost).'},
-  {q:'What does Image Restoration aim to do?',opts:['Make images look more beautiful','Recover the original image from degradation','Convert to frequency domain','Segment objects'],ans:1,exp:'Restoration has a specific objective: recover/reconstruct the true original image from a degraded version (blur, noise, etc.)'},
-  {q:'Which colour model is SUBTRACTIVE (used in printing)?',opts:['RGB','HSV','CMY','YUV'],ans:2,exp:'CMY (Cyan, Magenta, Yellow) is subtractive — mixing all three gives black. RGB is additive (mixing gives white), used in screens.'},
-  {q:'In Power Law transform, γ < 1 will:',opts:['Darken the image','Brighten the image','Invert the image','Create binary image'],ans:1,exp:'γ < 1 maps darker intensities to brighter outputs (brightening). γ > 1 darkens. This is used in gamma correction for displays.'},
-  {q:'What does Image Segmentation do?',opts:['Compress the image','Remove noise','Divide image into meaningful regions','Recognize objects'],ans:2,exp:'Segmentation divides the image into distinct, meaningful regions or objects, separating them from the background.'},
-  {q:'The Negative transform formula is:',opts:['s = r','s = c·log(1+r)','s = L-1-r','s = r^γ'],ans:2,exp:'Negative: s = (L-1) - r where L is the number of intensity levels (typically 256, so L-1 = 255). It inverts all pixel values.'},
-  {q:'Image Segmentation is used in medical imaging to:',opts:['Reduce file size','Enhance colours','Separate tumours from scans','Convert to binary'],ans:2,exp:'Segmentation can isolate (separate) a tumour region from surrounding tissue in a medical scan, enabling precise analysis.'}
+// ────────────────────────────────────────────
+// QUIZ
+// ────────────────────────────────────────────
+const Qs=[
+  {q:'What is the FIRST step in the DIP pipeline?',o:['Image Enhancement','Image Restoration','Image Acquisition','Segmentation'],a:2,e:'Image Acquisition is always first — you must capture/digitize the image before any processing.'},
+  {q:'Image Enhancement is classified as which type of process?',o:['Objective — mathematical ground truth','Subjective — depends on human perception','Deterministic restoration','Frequency domain filtering'],a:1,e:'Enhancement is SUBJECTIVE. What looks "better" depends on the viewer. No mathematical correct answer.'},
+  {q:'In s = T(r), what does "r" represent?',o:['Output intensity level','Transformation function','Input intensity level','Restoration model'],a:2,e:'r = input intensity. s = output intensity. T = transformation function applied per pixel.'},
+  {q:'JPEG compression is:',o:['Lossless — no data lost','Lossy — data is permanently discarded','Reversible compression','Huffman coding'],a:1,e:'JPEG is LOSSY — data is discarded for higher compression. PNG is lossless — perfect reconstruction.'},
+  {q:'Image Restoration aims to:',o:['Make image visually attractive','Recover original image from degradation','Divide image into regions','Classify objects in scene'],a:1,e:'Restoration is OBJECTIVE — it recovers the true original from blur/noise degradation using mathematical models.'},
+  {q:'The RGB colour model is:',o:['Subtractive — used in printing','Additive — used in screens','Binary — used in segmentation','Used in compression only'],a:1,e:'RGB is ADDITIVE: Red+Green+Blue=White. Used in screens. CMY is subtractive (used in printing).'},
+  {q:'In Power Law transform, γ < 1 causes:',o:['Darkening of image','Creates binary image','Brightening of image','Inverts intensities'],a:2,e:'γ<1 maps dark inputs to brighter outputs (brightens). γ>1 darkens. This is gamma correction.'},
+  {q:'Segmentation in medical imaging is used to:',o:['Compress MRI files','Enhance X-ray contrast','Separate tumours from healthy tissue','Recognize patient faces'],a:2,e:'Segmentation isolates meaningful regions — e.g., separating a tumour from surrounding tissue in a medical scan.'},
+  {q:'The Negative transform formula is:',o:['s = r','s = c·log(1+r)','s = L-1-r','s = c·r^γ'],a:2,e:'Negative: s = (L-1) - r = 255 - r for 8-bit images. All intensities are inverted — like a film negative.'},
+  {q:'"Sampling" in image acquisition means:',o:['Mapping intensity to discrete levels','Converting continuous spatial coords to pixel grid','Compressing pixel data','Filtering high frequencies'],a:1,e:'Sampling = continuous space → discrete pixel grid. Quantization = continuous intensity → discrete levels.'}
 ];
-
-let qIdx=0,qScore=0,qStreak=0,qAnswered=false;
-
-function loadQuestion() {
-  if(qIdx>=questions.length){showQuizDone();return;}
-  const q=questions[qIdx];
-  document.getElementById('q-num').textContent=qIdx+1;
-  document.getElementById('q-total').textContent=questions.length;
-  document.getElementById('quiz-q').textContent=q.q;
-  const opts=document.getElementById('quiz-opts');
-  opts.innerHTML='';
-  q.opts.forEach((o,i)=>{
-    const btn=document.createElement('button');
-    btn.className='q-opt';btn.textContent=o;
-    btn.onclick=()=>answerQ(i);
-    opts.appendChild(btn);
-  });
-  document.getElementById('quiz-feedback').style.display='none';
-  document.getElementById('next-btn').style.display='none';
-  qAnswered=false;
+let qi=0,qs=0,qans=false;
+function quizInit(){qi=0;qs=0;qans=false;renderQ();}
+function renderQ(){
+  if(qi>=Qs.length){showDone();return;}
+  const q=Qs[qi];
+  $('qn').textContent=qi+1;$('qt').textContent=Qs.length;$('qs2').textContent=qs;
+  $('qq').textContent=q.q;$('qo').innerHTML='';
+  q.o.forEach((o,i)=>{const b=document.createElement('button');b.className='qo';b.textContent=o;b.onclick=()=>ansQ(i);$('qo').appendChild(b);});
+  $('qf').style.display='none';$('qn2').style.display='none';qans=false;
 }
-
-function answerQ(chosen) {
-  if(qAnswered)return;qAnswered=true;
-  const q=questions[qIdx];
-  const opts=document.querySelectorAll('.q-opt');
-  opts.forEach(o=>o.classList.add('disabled'));
-  const fb=document.getElementById('quiz-feedback');
-  fb.style.display='block';
-  if(chosen===q.ans){
-    opts[chosen].classList.add('correct');
-    fb.className='quiz-feedback correct';
-    fb.textContent='✅ Correct! '+q.exp;
-    qScore++;qStreak++;
-    addXP(qStreak>1?20:15,'Correct Answer');
-    if(qStreak>=3) showAchievement('🔥','HOT STREAK!',`${qStreak} correct in a row!`);
-  } else {
-    opts[chosen].classList.add('wrong');
-    opts[q.ans].classList.add('correct');
-    fb.className='quiz-feedback wrong';
-    fb.textContent='❌ Incorrect. '+q.exp;
-    qStreak=0;streak=0;
-    document.getElementById('streak-display').textContent='🔥 0 streak';
-  }
-  document.getElementById('next-btn').style.display='block';
+function ansQ(i){
+  if(qans)return;qans=true;
+  const q=Qs[qi];document.querySelectorAll('.qo').forEach(b=>b.classList.add('dis'));
+  const opts=document.querySelectorAll('.qo'),fb=$('qf');fb.style.display='block';
+  if(i===q.a){opts[i].classList.add('ok');fb.className='qfb ok';fb.textContent='✅ Correct! '+q.e;qs++;gainXP(20,'Correct!');if(qs===Qs.length)achieve('🏆','PERFECT SCORE!','All 10 correct!');}
+  else{opts[i].classList.add('no');opts[q.a].classList.add('ok');fb.className='qfb no';fb.textContent='❌ Wrong. '+q.e;sk=0;$('SK').textContent='🔥0 streak';}
+  $('qn2').style.display='block';
 }
+function NQ(){qi++;renderQ();}
+function showDone(){$('qb').style.display='none';$('qd').style.display='block';$('qfi').textContent=`Score: ${qs}/${Qs.length} — ${Math.round(qs/Qs.length*100)}% accuracy!`;}
+function RQ(){qi=0;qs=0;qans=false;$('qb').style.display='block';$('qd').style.display='none';renderQ();}
 
-function nextQuestion(){qIdx++;loadQuestion();}
-function showQuizDone(){
-  document.getElementById('quiz-container').style.display='none';
-  document.getElementById('quiz-done').style.display='block';
-  document.getElementById('quiz-final-score').textContent=`You scored ${qScore}/${questions.length} — ${Math.round(qScore/questions.length*100)}% accuracy!`;
-  const xpGained=qScore*20;addXP(xpGained,'Quiz Completed');
-  if(qScore===questions.length) showAchievement('🏆','PERFECT SCORE!','You answered all 10 questions correctly!');
-}
-function restartQuiz(){
-  qIdx=0;qScore=0;qStreak=0;
-  document.getElementById('quiz-container').style.display='block';
-  document.getElementById('quiz-done').style.display='none';
-  loadQuestion();
-}
-
-// ─── TOAST ───
-function showToast(msg, isAchievement=false) {
-  const t=document.getElementById('toast');
-  const el=document.createElement('div');
-  el.className='toast-msg'+(isAchievement?' achievement':'');
-  el.textContent=msg;
-  t.appendChild(el);
-  setTimeout(()=>el.remove(),3000);
-}
-
-// ─── ACHIEVEMENT ───
-function showAchievement(icon, title, sub) {
-  document.getElementById('unlock-icon').textContent=icon;
-  document.getElementById('unlock-title').textContent=title;
-  document.getElementById('unlock-sub').textContent=sub;
-  document.getElementById('unlock-pop').classList.add('show');
-  showToast('🏅 '+title, true);
-}
-function closeUnlock(){document.getElementById('unlock-pop').classList.remove('show');}
-
-// ─── INIT ───
+// ────────────────────────────────────────────
+// BOOT
+// ────────────────────────────────────────────
 window.addEventListener('load',()=>{
-  animatePipeline();
-  drawAcquisition();
-  loadQuestion();
-  setTimeout(()=>showToast('🎮 Welcome to DIP Quest! Start exploring the pipeline!'),800);
-  setTimeout(()=>showToast('💡 Tip: Complete all 7 steps to unlock achievements!'),2500);
+  pipeInit();quizInit();
+  setTimeout(()=>toast('🎮 Welcome to DIP Quest! Explore every tab!'),500);
+  setTimeout(()=>toast('💡 Tap buttons inside sections to trigger animations!'),2000);
+  setTimeout(()=>toast('🔥 Earn XP streaks — explore everything!'),3600);
 });
 </script>
 </body>
