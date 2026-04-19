@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIP Quest — Digital Image Processing Adventure</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05050f;
+    --panel: #0a0a1e;
+    --panel2: #0f0f28;
+    --cyan: #00e5ff;
+    --magenta: #ff00c8;
+    --yellow: #ffe000;
+    --green: #00ff88;
+    --red: #ff3355;
+    --white: #e8f0fe;
+    --dim: #4a5275;
+    --glow-c: 0 0 12px #00e5ff, 0 0 30px #00e5ff44;
+    --glow-m: 0 0 12px #ff00c8, 0 0 30px #ff00c844;
+    --glow-g: 0 0 12px #00ff88, 0 0 30px #00ff8844;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--white);font-family:'Rajdhani',sans-serif;overflow-x:hidden;min-height:100vh;}
+
+  /* ─── SCANLINE OVERLAY ─── */
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,0.015) 2px,rgba(0,229,255,0.015) 4px);pointer-events:none;z-index:9999;}
+
+  /* ─── STARS BG ─── */
+  #stars{position:fixed;inset:0;z-index:0;overflow:hidden;}
+  .star{position:absolute;border-radius:50%;animation:twinkle var(--d,3s) ease-in-out infinite var(--delay,0s);}
+  @keyframes twinkle{0%,100%{opacity:.2;transform:scale(1);}50%{opacity:1;transform:scale(1.5);}}
+
+  /* ─── LAYOUT ─── */
+  #app{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:20px;}
+
+  /* ─── HEADER ─── */
+  header{text-align:center;padding:40px 20px 30px;position:relative;}
+  .logo{font-family:'Orbitron',monospace;font-size:clamp(2rem,6vw,3.5rem);font-weight:900;letter-spacing:4px;background:linear-gradient(90deg,var(--cyan),var(--magenta),var(--yellow));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 20px #00e5ff66);}
+  .tagline{font-size:1.1rem;color:var(--dim);letter-spacing:3px;margin-top:6px;font-family:'Share Tech Mono',monospace;}
+
+  /* ─── XP BAR ─── */
+  #xp-panel{background:var(--panel);border:1px solid #1a1a3e;border-radius:12px;padding:14px 24px;margin:20px 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+  .level-badge{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;color:var(--yellow);text-shadow:var(--glow-c);min-width:90px;}
+  .xp-track{flex:1;height:12px;background:#1a1a3e;border-radius:6px;overflow:hidden;min-width:120px;}
+  .xp-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--magenta));border-radius:6px;transition:width 0.8s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--glow-c);}
+  .xp-label{font-family:'Share Tech Mono',monospace;font-size:.85rem;color:var(--cyan);min-width:80px;}
+  .score-display{font-family:'Orbitron',monospace;color:var(--green);font-size:1.1rem;text-shadow:var(--glow-g);}
+  .streak{color:var(--magenta);font-family:'Orbitron',monospace;font-size:.9rem;text-shadow:var(--glow-m);}
+
+  /* ─── NAV TABS ─── */
+  #nav{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0;}
+  .tab-btn{flex:1;min-width:100px;padding:10px 6px;background:var(--panel);border:1px solid #1a1a3e;border-radius:8px;color:var(--dim);font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .3s;text-align:center;}
+  .tab-btn:hover,.tab-btn.active{background:linear-gradient(135deg,#0a1535,#150a2a);border-color:var(--cyan);color:var(--cyan);text-shadow:var(--glow-c);box-shadow:inset 0 0 20px #00e5ff11;}
+  .tab-btn .tab-icon{display:block;font-size:1.4rem;margin-bottom:2px;}
+
+  /* ─── SECTION ─── */
+  .section{display:none;animation:fadeSlide .5s ease;}
+  .section.active{display:block;}
+  @keyframes fadeSlide{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ─── CARDS ─── */
+  .step-card{background:var(--panel);border:1px solid #1a1a3e;border-radius:16px;padding:28px;margin:16px 0;cursor:pointer;transition:all .4s;position:relative;overflow:hidden;}
+  .step-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent,#00e5ff)11,transparent 60%);opacity:0;transition:opacity .4s;}
+  .step-card:hover::before{opacity:1;}
+  .step-card:hover{border-color:var(--accent,#00e5ff);transform:translateY(-4px);box-shadow:0 8px 40px var(--accent,#00e5ff)22;}
+  .card-header{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+  .step-num{font-family:'Orbitron',monospace;font-size:2.5rem;font-weight:900;color:var(--accent,#00e5ff);line-height:1;min-width:60px;text-shadow:0 0 20px var(--accent,#00e5ff);}
+  .step-title{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:700;letter-spacing:2px;color:var(--white);}
+  .step-body{font-size:1.05rem;line-height:1.7;color:#b0b8d0;}
+  .step-badge{position:absolute;top:16px;right:16px;background:var(--accent,#00e5ff);color:#000;font-family:'Orbitron',monospace;font-size:.65rem;padding:4px 10px;border-radius:20px;font-weight:900;letter-spacing:1px;}
+  .step-badge.done{background:var(--green);}
+  .step-badge.locked{background:var(--dim);color:#666;}
+
+  /* ─── CANVAS DEMOS ─── */
+  .demo-wrap{background:#080818;border:1px solid #1a1a3e;border-radius:12px;padding:16px;margin:12px 0;text-align:center;}
+  canvas{border-radius:8px;max-width:100%;}
+  .demo-label{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--cyan);margin-top:8px;letter-spacing:2px;}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0;justify-content:center;}
+  .ctrl-btn{padding:8px 18px;background:transparent;border:1px solid var(--cyan);border-radius:6px;color:var(--cyan);font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;transition:all .3s;}
+  .ctrl-btn:hover{background:var(--cyan);color:#000;}
+  .ctrl-btn.active-btn{background:var(--cyan);color:#000;}
+  input[type=range]{accent-color:var(--cyan);width:150px;}
+  .range-label{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--dim);}
+
+  /* ─── QUIZ ─── */
+  .quiz-card{background:var(--panel2);border:1px solid #1a1a3e;border-radius:16px;padding:30px;margin:16px 0;}
+  .quiz-q{font-size:1.2rem;font-weight:600;margin-bottom:20px;color:var(--white);line-height:1.5;}
+  .quiz-opts{display:grid;gap:10px;}
+  .q-opt{padding:14px 20px;background:#0a0a20;border:1px solid #2a2a4e;border-radius:10px;cursor:pointer;font-size:1rem;color:#b0b8d0;transition:all .3s;text-align:left;}
+  .q-opt:hover:not(.disabled){border-color:var(--cyan);color:var(--cyan);background:#0a1525;}
+  .q-opt.correct{border-color:var(--green);background:#0a2015;color:var(--green);animation:pulse-green .5s;}
+  .q-opt.wrong{border-color:var(--red);background:#200a0a;color:var(--red);}
+  .q-opt.disabled{pointer-events:none;}
+  @keyframes pulse-green{0%{transform:scale(1);}50%{transform:scale(1.02);}100%{transform:scale(1);}}
+  .quiz-feedback{margin-top:16px;padding:12px 18px;border-radius:8px;font-size:.95rem;line-height:1.5;}
+  .quiz-feedback.correct{background:#0a2015;border-left:3px solid var(--green);color:var(--green);}
+  .quiz-feedback.wrong{background:#200a0a;border-left:3px solid var(--red);color:#ff8899;}
+  .next-btn{margin-top:14px;padding:12px 28px;background:linear-gradient(135deg,var(--cyan),var(--magenta));border:none;border-radius:8px;color:#000;font-family:'Orbitron',monospace;font-weight:700;font-size:.9rem;cursor:pointer;transition:transform .2s;letter-spacing:1px;}
+  .next-btn:hover{transform:scale(1.05);}
+  #quiz-progress{font-family:'Share Tech Mono',monospace;color:var(--dim);margin-bottom:20px;}
+
+  /* ─── PIPELINE ANIMATION ─── */
+  #pipeline{display:flex;align-items:center;flex-wrap:wrap;gap:8px;justify-content:center;margin:30px 0;}
+  .pipe-node{background:var(--panel);border:2px solid #1a1a3e;border-radius:12px;padding:14px 18px;text-align:center;font-family:'Orbitron',monospace;font-size:.7rem;letter-spacing:1px;transition:all .5s;cursor:pointer;min-width:90px;}
+  .pipe-node:hover,.pipe-node.lit{border-color:var(--accent,#00e5ff);color:var(--accent,#00e5ff);box-shadow:0 0 20px var(--accent,#00e5ff)44;background:#0a1525;text-shadow:0 0 10px var(--accent,#00e5ff);}
+  .pipe-arrow{color:var(--dim);font-size:1.4rem;animation:arrowPulse 1.5s ease-in-out infinite;}
+  @keyframes arrowPulse{0%,100%{opacity:.3;}50%{opacity:1;color:var(--cyan);}}
+  .pipe-node .pipe-icon{font-size:1.6rem;display:block;margin-bottom:4px;}
+
+  /* ─── TOAST ─── */
+  #toast{position:fixed;bottom:30px;right:30px;z-index:1000;display:flex;flex-direction:column;gap:10px;pointer-events:none;}
+  .toast-msg{background:var(--panel2);border:1px solid var(--cyan);border-radius:10px;padding:12px 20px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:1rem;color:var(--cyan);animation:toastIn .4s ease,toastOut .4s ease 2.5s forwards;min-width:200px;text-shadow:var(--glow-c);}
+  .toast-msg.achievement{border-color:var(--yellow);color:var(--yellow);}
+  @keyframes toastIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+  @keyframes toastOut{to{opacity:0;transform:translateX(40px);}}
+
+  /* ─── PIXEL PLAYGROUND ─── */
+  #pixel-grid{display:grid;gap:3px;margin:16px auto;width:fit-content;}
+  .px-cell{width:28px;height:28px;border-radius:4px;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid #1a1a3e;}
+  .px-cell:hover{transform:scale(1.3);box-shadow:0 0 12px currentColor;}
+
+  /* ─── FORMULA BOX ─── */
+  .formula-box{background:#060616;border:1px solid var(--cyan);border-radius:10px;padding:16px 24px;font-family:'Share Tech Mono',monospace;font-size:1.1rem;color:var(--cyan);text-align:center;margin:12px 0;text-shadow:var(--glow-c);letter-spacing:2px;}
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px;}
+
+  /* ─── RESPONSIVE ─── */
+  @media(max-width:600px){.step-title{font-size:1rem;}.logo{font-size:2rem;}}
+
+  /* achievement unlock */
+  .unlock-pop{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:var(--panel2);border:2px solid var(--yellow);border-radius:20px;padding:36px 50px;text-align:center;z-index:2000;transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+  .unlock-pop.show{transform:translate(-50%,-50%) scale(1);}
+  .unlock-icon{font-size:3.5rem;}
+  .unlock-title{font-family:'Orbitron',monospace;color:var(--yellow);font-size:1.3rem;margin:10px 0 4px;}
+  .unlock-sub{color:var(--dim);font-size:.9rem;}
+  .unlock-close{margin-top:16px;padding:8px 24px;background:var(--yellow);border:none;border-radius:6px;color:#000;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div id="stars"></div>
+
+<!-- App -->
+<div id="app">
+  <header>
+    <div class="logo">⚡ DIP QUEST</div>
+    <div class="tagline">// DIGITAL IMAGE PROCESSING — GAMIFIED //</div>
+  </header>
+
+  <!-- XP Bar -->
+  <div id="xp-panel">
+    <div class="level-badge" id="level-badge">LVL 1</div>
+    <div style="display:flex;flex-direction:column;flex:1;gap:4px;">
+      <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+      <div class="xp-label" id="xp-label">0 / 100 XP</div>
+    </div>
+    <div class="score-display">⚡ <span id="score-val">0</span> pts</div>
+    <div class="streak" id="streak-display">🔥 0 streak</div>
+  </div>
+
+  <!-- Nav -->
+  <div id="nav">
+    <button class="tab-btn active" onclick="showTab('pipeline')"><span class="tab-icon">🔗</span>Pipeline</button>
+    <button class="tab-btn" onclick="showTab('steps')"><span class="tab-icon">📖</span>Learn</button>
+    <button class="tab-btn" onclick="showTab('lab')"><span class="tab-icon">🔬</span>Lab</button>
+    <button class="tab-btn" onclick="showTab('quiz')"><span class="tab-icon">🎯</span>Quiz</button>
+    <button class="tab-btn" onclick="showTab('transform')"><span class="tab-icon">📈</span>Transforms</button>
+  </div>
+
+  <!-- ════ PIPELINE TAB ════ -->
+  <div class="section active" id="tab-pipeline">
+    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">FUNDAMENTAL PIPELINE — CLICK EACH NODE</h2>
+    <p style="color:var(--dim);font-size:.9rem;margin-bottom:16px;">Tap any step to illuminate it and learn what it does in the DIP chain.</p>
+    <div id="pipeline">
+      <div class="pipe-node" style="--accent:#00e5ff" onclick="lightNode(0,this,'Image Acquisition','📷 The very first step — capturing raw image data using cameras or sensors. The captured scene is converted to digital form through SAMPLING (converting continuous to discrete positions) and QUANTIZATION (converting amplitude to discrete levels). No image = no processing!')">
+        <span class="pipe-icon">📷</span>ACQUIRE
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" style="--accent:#00ff88" onclick="lightNode(1,this,'Image Enhancement','✨ Making images look better for HUMAN perception. Subjective process — what looks good depends on the viewer. Techniques: contrast stretching, image sharpening, histogram equalization. Ex: brightening a dark photograph.')">
+        <span class="pipe-icon">✨</span>ENHANCE
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" style="--accent:#ff9500" onclick="lightNode(2,this,'Image Restoration','🔧 Recovering the ORIGINAL image from a degraded one — objective process. Uses mathematical & statistical models to remove blur or noise (defocus, motion blur). Unlike enhancement, there is a known ground truth to restore to.')">
+        <span class="pipe-icon">🔧</span>RESTORE
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" style="--accent:#ff00c8" onclick="lightNode(3,this,'Colour Processing','🎨 Handling images with colour information using models like RGB and CMY. Used in graphics, photography, and video. Each colour component (R,G,B) can be processed separately or together.')">
+        <span class="pipe-icon">🎨</span>COLOUR
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" style="--accent:#ffe000" onclick="lightNode(4,this,'Image Compression','📦 Reducing data size for storage & transmission. 2 types: LOSSY (JPEG) — data is lost but compression is high; LOSSLESS (PNG, DIVC) — no information lost. Trade-off: file size vs. quality.')">
+        <span class="pipe-icon">📦</span>COMPRESS
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" style="--accent:#00e5ff" onclick="lightNode(5,this,'Segmentation','🧩 Dividing image into meaningful REGIONS or objects. Simplifies analysis by separating objects from background. Medical example: isolating a tumour from a scan.')">
+        <span class="pipe-icon">🧩</span>SEGMENT
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" style="--accent:#00ff88" onclick="lightNode(6,this,'Object Recognition','🤖 Identifying and labelling objects using stored patterns in a database. Compares image features with known templates. Examples: Face recognition, fingerprint identification.')">
+        <span class="pipe-icon">🤖</span>RECOGNISE
+      </div>
+    </div>
+
+    <div id="pipe-info" style="background:var(--panel2);border:1px solid #1a1a3e;border-radius:14px;padding:24px;margin-top:16px;display:none;">
+      <h3 id="pipe-info-title" style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:10px;font-size:1.1rem;"></h3>
+      <p id="pipe-info-body" style="font-size:1.05rem;line-height:1.7;color:#b0b8d0;"></p>
+    </div>
+
+    <div class="demo-wrap" style="margin-top:24px;">
+      <canvas id="pipe-canvas" width="600" height="90"></canvas>
+      <div class="demo-label">PIPELINE SIGNAL FLOW — ANIMATED</div>
+    </div>
+  </div>
+
+  <!-- ════ LEARN TAB ════ -->
+  <div class="section" id="tab-steps">
+    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">CONCEPT CARDS — UNLOCK AS YOU LEARN</h2>
+
+    <div class="step-card" style="--accent:#00e5ff" onclick="unlockCard(this,0)">
+      <div class="card-header">
+        <div class="step-num">01</div>
+        <div><div class="step-title">IMAGE ACQUISITION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">The Gateway Step</div></div>
+      </div>
+      <div class="step-body">
+        Image acquisition is the <strong style="color:var(--cyan)">first step</strong> in digital image processing. It involves capturing an image using a <strong>camera or sensor</strong>.<br><br>
+        The captured image is converted to digital form through two key operations:<br>
+        • <strong style="color:var(--cyan)">Sampling</strong> — discretizing the spatial coordinates (x,y)<br>
+        • <strong style="color:var(--cyan)">Quantization</strong> — discretizing the intensity/amplitude values
+      </div>
+      <div class="demo-wrap" style="margin-top:16px;">
+        <canvas id="acq-canvas" width="400" height="100"></canvas>
+        <div class="demo-label">SAMPLING & QUANTIZATION VISUALIZER</div>
+      </div>
+      <span class="step-badge" id="badge-0">CLICK TO LEARN</span>
+    </div>
+
+    <div class="step-card" style="--accent:#00ff88" onclick="unlockCard(this,1)">
+      <div class="card-header">
+        <div class="step-num" style="color:var(--green)">02</div>
+        <div><div class="step-title">IMAGE ENHANCEMENT</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Making it Beautiful (Subjective)</div></div>
+      </div>
+      <div class="step-body">
+        Enhancement <strong style="color:var(--green)">improves visual quality</strong> for human interpretation. It's a <em>subjective</em> process — results depend on what looks good to the viewer.<br><br>
+        Common methods:
+        • <strong>Contrast Stretching</strong> — expands the intensity range<br>
+        • <strong>Image Sharpening</strong> — enhances edges<br>
+        • <strong>Histogram Equalization</strong> — redistributes intensity values<br><br>
+        <em>Ex: Improving brightness & contrast of a dark photograph.</em>
+      </div>
+      <div class="demo-wrap" style="margin-top:14px;">
+        <div class="controls">
+          <span class="range-label">Brightness</span>
+          <input type="range" id="bright-slider" min="-100" max="100" value="0" oninput="updateEnhance()">
+          <span class="range-label">Contrast</span>
+          <input type="range" id="contrast-slider" min="0.1" max="3" step="0.1" value="1" oninput="updateEnhance()">
+        </div>
+        <canvas id="enhance-canvas" width="400" height="120"></canvas>
+        <div class="demo-label">LIVE IMAGE ENHANCEMENT DEMO</div>
+      </div>
+      <span class="step-badge" style="background:var(--green)" id="badge-1">CLICK TO LEARN</span>
+    </div>
+
+    <div class="step-card" style="--accent:#ff9500" onclick="unlockCard(this,2)">
+      <div class="card-header">
+        <div class="step-num" style="color:#ff9500">03</div>
+        <div><div class="step-title">IMAGE RESTORATION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Recover the Truth (Objective)</div></div>
+      </div>
+      <div class="step-body">
+        Restoration aims to <strong style="color:#ff9500">recover the original image</strong> from a degraded version. It is <em>objective</em> — there is a known target state to restore to.<br><br>
+        • Uses <strong>mathematical & statistical models</strong> to remove distortions<br>
+        • Common degradations: <strong>Blur</strong> (defocus, motion) and <strong>Noise</strong><br>
+        • Unlike enhancement, restoration has a ground-truth goal<br><br>
+        <em>Example of degradation: defocus, motion blur.</em>
+      </div>
+      <div class="demo-wrap" style="margin-top:14px;">
+        <div class="controls">
+          <button class="ctrl-btn" onclick="addBlur()">Add Blur 🌫️</button>
+          <button class="ctrl-btn" onclick="addNoise()">Add Noise 📡</button>
+          <button class="ctrl-btn" onclick="restoreImg()">Restore 🔧</button>
+        </div>
+        <canvas id="restore-canvas" width="400" height="120"></canvas>
+        <div class="demo-label">DEGRADATION & RESTORATION DEMO</div>
+      </div>
+      <span class="step-badge" style="background:#ff9500" id="badge-2">CLICK TO LEARN</span>
+    </div>
+
+    <div class="step-card" style="--accent:#ff00c8" onclick="unlockCard(this,3)">
+      <div class="card-header">
+        <div class="step-num" style="color:var(--magenta)">04</div>
+        <div><div class="step-title">COLOUR IMAGE PROCESSING</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">The World in Colour</div></div>
+      </div>
+      <div class="step-body">
+        Colour processing handles images containing <strong style="color:var(--magenta)">colour information</strong>.<br><br>
+        Key colour models:<br>
+        • <strong>RGB</strong> — Red, Green, Blue (additive, used in screens)<br>
+        • <strong>CMY</strong> — Cyan, Magenta, Yellow (subtractive, used in printing)<br><br>
+        Widely used in <strong>graphics, photography, and video processing</strong>. Each colour channel can be processed independently or jointly.
+      </div>
+      <div class="demo-wrap" style="margin-top:14px;">
+        <canvas id="colour-canvas" width="400" height="120"></canvas>
+        <div class="controls" style="margin-top:8px;">
+          <button class="ctrl-btn" onclick="showColorModel('rgb')">RGB Model</button>
+          <button class="ctrl-btn" onclick="showColorModel('cmy')">CMY Model</button>
+          <button class="ctrl-btn" onclick="showColorModel('channels')">Channels</button>
+        </div>
+        <div class="demo-label">COLOUR MODEL VISUALIZER</div>
+      </div>
+      <span class="step-badge" style="background:var(--magenta)" id="badge-3">CLICK TO LEARN</span>
+    </div>
+
+    <div class="step-card" style="--accent:#ffe000" onclick="unlockCard(this,4)">
+      <div class="card-header">
+        <div class="step-num" style="color:var(--yellow)">05</div>
+        <div><div class="step-title">IMAGE COMPRESSION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Less Space, More Speed</div></div>
+      </div>
+      <div class="step-body">
+        Compression <strong style="color:var(--yellow)">reduces data size</strong> required to represent an image — saves storage and improves transmission efficiency.<br><br>
+        Two fundamental types:<br>
+        • <strong>Lossy (JPEG)</strong> — Data is discarded; higher compression but quality loss<br>
+        • <strong>Lossless (PNG, DIVC)</strong> — No information lost; perfect reconstruction<br><br>
+        <em>Trade-off: File size ↓ vs. Image quality ↑</em>
+      </div>
+      <div class="demo-wrap" style="margin-top:14px;">
+        <canvas id="compress-canvas" width="400" height="120"></canvas>
+        <div class="controls">
+          <span class="range-label">Quality</span>
+          <input type="range" id="quality-slider" min="1" max="20" value="20" oninput="updateCompression()">
+          <span id="quality-label" style="font-family:'Share Tech Mono',monospace;color:var(--yellow)">Q:20</span>
+        </div>
+        <div class="demo-label">COMPRESSION QUALITY DEMO</div>
+      </div>
+      <span class="step-badge" style="background:var(--yellow);color:#000" id="badge-4">CLICK TO LEARN</span>
+    </div>
+
+    <div class="step-card" style="--accent:#00e5ff" onclick="unlockCard(this,5)">
+      <div class="card-header">
+        <div class="step-num">06</div>
+        <div><div class="step-title">IMAGE SEGMENTATION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Divide & Conquer</div></div>
+      </div>
+      <div class="step-body">
+        Segmentation <strong style="color:var(--cyan)">divides an image into meaningful regions</strong> or objects. Simplifies image analysis by separating objects from the background.<br><br>
+        • Enables focused analysis of specific image parts<br>
+        • Critical in <strong>medical imaging</strong> (tumour detection)<br>
+        • Used in <strong>autonomous driving</strong>, surveillance<br><br>
+        <em>Ex: Separating a tumour region from a medical scan.</em>
+      </div>
+      <div class="demo-wrap" style="margin-top:14px;">
+        <canvas id="segment-canvas" width="400" height="120"></canvas>
+        <div class="controls">
+          <button class="ctrl-btn" onclick="runSegmentation()">Segment! 🧩</button>
+          <button class="ctrl-btn" onclick="resetSegment()">Reset</button>
+        </div>
+        <div class="demo-label">SEGMENTATION ANIMATION</div>
+      </div>
+      <span class="step-badge" id="badge-5">CLICK TO LEARN</span>
+    </div>
+
+    <div class="step-card" style="--accent:#00ff88" onclick="unlockCard(this,6)">
+      <div class="card-header">
+        <div class="step-num" style="color:var(--green)">07</div>
+        <div><div class="step-title">OBJECT RECOGNITION</div><div style="color:var(--dim);font-size:.85rem;margin-top:2px;">Machines That See</div></div>
+      </div>
+      <div class="step-body">
+        Object recognition <strong style="color:var(--green)">identifies and labels objects</strong> in an image based on extracted features.<br><br>
+        Process:<br>
+        1. <strong>Feature Extraction</strong> — edges, shapes, textures<br>
+        2. <strong>Pattern Matching</strong> — compare with stored database<br>
+        3. <strong>Classification</strong> — assign a label/category<br><br>
+        <em>Examples: Face recognition, fingerprint identification, etc.</em>
+      </div>
+      <div class="demo-wrap" style="margin-top:14px;">
+        <canvas id="recog-canvas" width="400" height="120"></canvas>
+        <div class="demo-label">FEATURE EXTRACTION ANIMATION</div>
+      </div>
+      <span class="step-badge" style="background:var(--green)" id="badge-6">CLICK TO LEARN</span>
+    </div>
+  </div>
+
+  <!-- ════ LAB TAB ════ -->
+  <div class="section" id="tab-lab">
+    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">INTENSITY TRANSFORMATION LAB</h2>
+    <p style="color:var(--dim);font-size:.9rem;margin-bottom:20px;">The formula: <strong style="color:var(--cyan)">s = T(r)</strong> — manipulate pixels directly in the spatial domain.</p>
+
+    <div class="formula-box">s = T(r) &nbsp;|&nbsp; r → input intensity &nbsp;|&nbsp; s → output intensity &nbsp;|&nbsp; T → transform function</div>
+
+    <div class="controls" style="margin:20px 0;">
+      <button class="ctrl-btn active-btn" id="btn-identity" onclick="setTransform('identity')">Identity</button>
+      <button class="ctrl-btn" id="btn-negative" onclick="setTransform('negative')">Negative (L-1-r)</button>
+      <button class="ctrl-btn" id="btn-log" onclick="setTransform('log')">Log</button>
+      <button class="ctrl-btn" id="btn-power" onclick="setTransform('power')">Power Law (γ)</button>
+      <button class="ctrl-btn" id="btn-threshold" onclick="setTransform('threshold')">Threshold</button>
+    </div>
+
+    <div id="gamma-ctrl" style="display:none;text-align:center;margin-bottom:12px;">
+      <span class="range-label">γ (gamma) = </span>
+      <input type="range" id="gamma-slider" min="0.1" max="5" step="0.1" value="2" oninput="setTransform('power')">
+      <span id="gamma-val" style="font-family:'Share Tech Mono',monospace;color:var(--yellow);">2.0</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;">
+      <div class="demo-wrap">
+        <canvas id="lab-input" width="280" height="180"></canvas>
+        <div class="demo-label">INPUT IMAGE (r)</div>
+      </div>
+      <div class="demo-wrap">
+        <canvas id="lab-output" width="280" height="180"></canvas>
+        <div class="demo-label">OUTPUT IMAGE (s)</div>
+      </div>
+    </div>
+
+    <div class="demo-wrap">
+      <canvas id="lab-curve" width="400" height="200"></canvas>
+      <div class="demo-label">TRANSFORMATION CURVE T(r)</div>
+    </div>
+
+    <div id="transform-info" style="background:var(--panel2);border:1px solid #1a1a3e;border-radius:14px;padding:20px;margin-top:16px;">
+      <h3 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;">Identity Transform</h3>
+      <p style="color:#b0b8d0;font-size:1rem;line-height:1.6;">The identity transform passes input intensity unchanged to the output: <strong style="color:var(--cyan)">s = r</strong>. The diagonal line in the graph represents this 1-to-1 mapping. Used as a reference baseline.</p>
+    </div>
+  </div>
+
+  <!-- ════ QUIZ TAB ════ -->
+  <div class="section" id="tab-quiz">
+    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">KNOWLEDGE CHALLENGE</h2>
+    <div id="quiz-progress">Question <span id="q-num">1</span> of <span id="q-total">10</span></div>
+    <div class="quiz-card" id="quiz-container">
+      <div class="quiz-q" id="quiz-q"></div>
+      <div class="quiz-opts" id="quiz-opts"></div>
+      <div id="quiz-feedback" style="display:none;" class="quiz-feedback"></div>
+      <button class="next-btn" id="next-btn" style="display:none;" onclick="nextQuestion()">NEXT QUESTION →</button>
+    </div>
+    <div id="quiz-done" style="display:none;text-align:center;padding:40px;">
+      <div style="font-size:3rem;margin-bottom:16px;">🏆</div>
+      <div style="font-family:'Orbitron',monospace;color:var(--yellow);font-size:1.8rem;margin-bottom:8px;">QUIZ COMPLETE!</div>
+      <div id="quiz-final-score" style="font-size:1.2rem;color:#b0b8d0;margin-bottom:24px;"></div>
+      <button class="next-btn" onclick="restartQuiz()">PLAY AGAIN 🔄</button>
+    </div>
+  </div>
+
+  <!-- ════ TRANSFORMS TAB ════ -->
+  <div class="section" id="tab-transform">
+    <h2 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;font-size:1.1rem;letter-spacing:3px;">SPATIAL DOMAIN TRANSFORMS</h2>
+
+    <div style="display:grid;gap:16px;">
+      <div class="step-card" style="--accent:#00e5ff;cursor:default;">
+        <div class="card-header">
+          <div class="step-num">T1</div>
+          <div><div class="step-title">SPATIAL DOMAIN</div><div style="color:var(--dim);font-size:.85rem">Work directly on image pixels f(x,y)</div></div>
+        </div>
+        <div class="step-body">
+          In spatial domain, <strong style="color:var(--cyan)">operations are performed directly on pixel values</strong>.<br>
+          Two main categories:<br>
+          • <strong>Intensity Transformation</strong> — operates on single pixels → s = T(r)<br>
+          • <strong>Spatial Filtering</strong> — operates on a neighbourhood of pixels
+        </div>
+        <div class="formula-box" style="margin-top:14px;">g(x,y) = T[ f(x,y) ] &nbsp;&nbsp; where T = transformation operator</div>
+      </div>
+
+      <div class="step-card" style="--accent:#ff9500;cursor:default;">
+        <div class="card-header">
+          <div class="step-num" style="color:#ff9500">T2</div>
+          <div><div class="step-title">FREQUENCY DOMAIN</div><div style="color:var(--dim);font-size:.85rem">Transform → Filter → Inverse Transform</div></div>
+        </div>
+        <div class="step-body">
+          In frequency domain, the image is first <strong style="color:#ff9500">transformed</strong> (e.g., via Fourier Transform), filtered in the transform domain, then <strong>inverse-transformed</strong> back to spatial domain.<br><br>
+          Flow: <strong>Spatial Image → Transform → Filter in Freq. Domain → Inverse Transform → Output</strong>
+        </div>
+        <div class="demo-wrap" style="margin-top:14px;">
+          <canvas id="freq-canvas" width="500" height="80"></canvas>
+          <div class="demo-label">FREQUENCY DOMAIN PIPELINE</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;flex-wrap:wrap;">
+        <div class="step-card" style="--accent:#00e5ff;cursor:default;padding:20px;">
+          <div style="font-family:'Orbitron',monospace;font-size:.85rem;color:var(--cyan);margin-bottom:8px;">LINEAR</div>
+          <div class="formula-box" style="font-size:.85rem;padding:10px;">s = r (Identity)<br>s = L-1-r (Negative)</div>
+          <div style="font-size:.85rem;color:#b0b8d0;margin-top:8px;">Straight-line mappings. Identity leaves image unchanged; Negative inverts intensities.</div>
+        </div>
+        <div class="step-card" style="--accent:#00ff88;cursor:default;padding:20px;">
+          <div style="font-family:'Orbitron',monospace;font-size:.85rem;color:var(--green);margin-bottom:8px;">LOGARITHMIC</div>
+          <div class="formula-box" style="font-size:.85rem;padding:10px;border-color:var(--green);color:var(--green);">s = c·log(1+r)</div>
+          <div style="font-size:.85rem;color:#b0b8d0;margin-top:8px;">Compresses bright, expands dark. Useful for Fourier spectrum display. Inverse log does the opposite.</div>
+        </div>
+        <div class="step-card" style="--accent:#ff9500;cursor:default;padding:20px;">
+          <div style="font-family:'Orbitron',monospace;font-size:.85rem;color:#ff9500;margin-bottom:8px;">POWER LAW (γ)</div>
+          <div class="formula-box" style="font-size:.85rem;padding:10px;border-color:#ff9500;color:#ff9500;">s = c·r<sup>γ</sup></div>
+          <div style="font-size:.85rem;color:#b0b8d0;margin-top:8px;">Gamma correction. γ&lt;1 brightens; γ&gt;1 darkens. Used in display calibration (CRT screens).</div>
+        </div>
+      </div>
+
+      <div class="step-card" style="--accent:#ffe000;cursor:default;">
+        <div class="card-header">
+          <div class="step-num" style="color:var(--yellow)">T3</div>
+          <div><div class="step-title">THRESHOLDING</div><div style="color:var(--dim);font-size:.85rem">Creating Binary Images</div></div>
+        </div>
+        <div class="step-body">
+          Image thresholding converts a grayscale image to <strong style="color:var(--yellow)">binary (black/white)</strong>:<br>
+          • If r ≤ K → s = 0 (Black)<br>
+          • If r &gt; K → s = L-1 (White)<br><br>
+          The threshold value K determines the cut-off point.
+        </div>
+        <div class="formula-box" style="margin-top:14px;border-color:var(--yellow);color:var(--yellow);">s = 0 if r ≤ K &nbsp;&nbsp;|&nbsp;&nbsp; s = L-1 if r > K</div>
+        <div class="demo-wrap" style="margin-top:14px;">
+          <div class="controls">
+            <span class="range-label">Threshold K</span>
+            <input type="range" id="thresh-slider" min="0" max="255" value="128" oninput="updateThresh()">
+            <span id="thresh-val" style="font-family:'Share Tech Mono',monospace;color:var(--yellow);">K=128</span>
+          </div>
+          <canvas id="thresh-canvas" width="400" height="100"></canvas>
+          <div class="demo-label">LIVE THRESHOLDING — BINARY IMAGE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div id="toast"></div>
+
+<!-- Achievement popup -->
+<div class="unlock-pop" id="unlock-pop">
+  <div class="unlock-icon" id="unlock-icon">🏅</div>
+  <div class="unlock-title" id="unlock-title">ACHIEVEMENT UNLOCKED!</div>
+  <div class="unlock-sub" id="unlock-sub">You mastered a new concept!</div>
+  <button class="unlock-close" onclick="closeUnlock()">CLAIM REWARD ⚡</button>
+</div>
+
+<script>
+// ─── STATE ───
+let xp = 0, level = 1, score = 0, streak = 0, cardsUnlocked = [];
+const XP_PER_LEVEL = 100;
+
+// ─── STARS ───
+(function() {
+  const s = document.getElementById('stars');
+  for(let i=0;i<120;i++){
+    const d = document.createElement('div');
+    d.className='star';
+    const size = Math.random()*3+1;
+    d.style.cssText=`width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:#fff;--d:${(Math.random()*4+2).toFixed(1)}s;--delay:-${(Math.random()*5).toFixed(1)}s;opacity:${Math.random()*.8};`;
+    s.appendChild(d);
+  }
+})();
+
+// ─── XP SYSTEM ───
+function addXP(amount, reason) {
+  xp += amount;
+  score += amount * (streak+1);
+  streak++;
+  if(streak>1) showToast(`🔥 ${streak}x streak! +${amount*streak} bonus!`, false);
+  else showToast(`+${amount} XP — ${reason}`, false);
+  updateXPBar();
+  document.getElementById('score-val').textContent = score;
+  document.getElementById('streak-display').textContent = `🔥 ${streak} streak`;
+}
+
+function updateXPBar() {
+  const lv = Math.floor(xp/XP_PER_LEVEL)+1;
+  const pct = (xp%XP_PER_LEVEL)/XP_PER_LEVEL*100;
+  document.getElementById('xp-fill').style.width = pct+'%';
+  document.getElementById('xp-label').textContent = `${xp%XP_PER_LEVEL} / ${XP_PER_LEVEL} XP`;
+  if(lv > level) {
+    level = lv;
+    document.getElementById('level-badge').textContent = `LVL ${level}`;
+    showAchievement('⬆️', `LEVEL ${level} REACHED!`, `Your image processing knowledge grows!`);
+  }
+}
+
+// ─── TABS ───
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  initCanvases(id);
+}
+
+// ─── PIPELINE ───
+let pipeNodes=[];
+function lightNode(idx, el, title, body) {
+  document.querySelectorAll('.pipe-node').forEach(n=>{n.classList.remove('lit');});
+  el.classList.add('lit');
+  const info = document.getElementById('pipe-info');
+  info.style.display='block';
+  document.getElementById('pipe-info-title').textContent = '⚡ ' + title;
+  document.getElementById('pipe-info-body').textContent = body;
+  if(!pipeNodes.includes(idx)){
+    pipeNodes.push(idx);
+    addXP(15, title);
+    if(pipeNodes.length===7) showAchievement('🔗','PIPELINE MASTER!','You explored all 7 DIP steps!');
+  }
+}
+
+// Pipeline animation canvas
+function animatePipeline() {
+  const cv = document.getElementById('pipe-canvas');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.fillStyle = '#05050f';
+    ctx.fillRect(0,0,cv.width,cv.height);
+    const nodes = 7;
+    const spacing = cv.width/nodes;
+    const colors = ['#00e5ff','#00ff88','#ff9500','#ff00c8','#ffe000','#00e5ff','#00ff88'];
+    // draw connections
+    for(let i=0;i<nodes-1;i++){
+      const x = spacing*i + spacing/2;
+      const nx = spacing*(i+1) + spacing/2;
+      ctx.beginPath();
+      ctx.moveTo(x,45);ctx.lineTo(nx,45);
+      ctx.strokeStyle = '#1a1a3e';ctx.lineWidth=2;ctx.stroke();
+    }
+    // animated particle
+    const px = (t%1)*(cv.width-40)+20;
+    const ni = Math.floor(px/spacing);
+    const col = colors[Math.min(ni,colors.length-1)];
+    // glow
+    const gr = ctx.createRadialGradient(px,45,0,px,45,20);
+    gr.addColorStop(0,col+'ff');
+    gr.addColorStop(1,col+'00');
+    ctx.beginPath();ctx.arc(px,45,20,0,Math.PI*2);ctx.fillStyle=gr;ctx.fill();
+    ctx.beginPath();ctx.arc(px,45,5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    // nodes
+    for(let i=0;i<nodes;i++){
+      const x=spacing*i+spacing/2;
+      ctx.beginPath();ctx.arc(x,45,10,0,Math.PI*2);
+      ctx.fillStyle = pipeNodes.includes(i) ? colors[i] : '#1a1a3e';
+      ctx.fill();
+      ctx.strokeStyle=colors[i];ctx.lineWidth=2;ctx.stroke();
+    }
+    t+=0.004; requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ─── CARDS ───
+const cardNames = ['Image Acquisition','Image Enhancement','Image Restoration','Colour Processing','Image Compression','Image Segmentation','Object Recognition'];
+const cardXP = [20,20,20,20,20,20,25];
+
+function unlockCard(el, idx) {
+  if(cardsUnlocked.includes(idx)) return;
+  cardsUnlocked.push(idx);
+  const badge = document.getElementById('badge-'+idx);
+  badge.textContent = '✅ UNLOCKED';
+  badge.classList.add('done');
+  addXP(cardXP[idx], cardNames[idx]);
+  if(cardsUnlocked.length===7) showAchievement('📚','ALL STEPS MASTERED!','You learned all 7 DIP fundamentals!');
+}
+
+// ─── CANVAS DEMOS ───
+function initCanvases(tab) {
+  if(tab==='pipeline') { setTimeout(animatePipeline, 100); drawAcquisition(); }
+  if(tab==='steps') { drawAcquisition(); drawEnhance(); drawRestore(); drawColorModel('rgb'); drawCompression(); drawSegment(); drawRecog(); }
+  if(tab==='lab') { drawLabAll('identity'); }
+  if(tab==='transform') { drawFreqPipeline(); drawThresh(128); }
+}
+
+// Acquisition canvas
+function drawAcquisition() {
+  const cv = document.getElementById('acq-canvas');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  const w=cv.width, h=cv.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  // Continuous sine (analog)
+  ctx.beginPath();
+  ctx.strokeStyle='#00e5ff';ctx.lineWidth=2;
+  for(let x=0;x<w/2-10;x++){
+    const y = h/2 + Math.sin(x*0.12)*28;
+    x===0?ctx.moveTo(x+5,y):ctx.lineTo(x+5,y);
+  }
+  ctx.stroke();
+  ctx.fillStyle='#00e5ff44';ctx.font='11px Share Tech Mono';ctx.fillStyle='#00e5ff';
+  ctx.fillText('ANALOG SIGNAL',8,14);
+  // Sampled discrete
+  const sx=w/2+10;
+  ctx.fillStyle='#00ff8888';
+  for(let i=0;i<12;i++){
+    const y=h/2+Math.sin(i*0.8)*28;
+    const barH=h/2-y;
+    ctx.fillStyle='#00ff88';
+    ctx.fillRect(sx+i*15,y,10,Math.max(0,barH));
+    ctx.fillStyle='#00ff88';
+    ctx.beginPath();ctx.arc(sx+i*15+5,y,4,0,Math.PI*2);ctx.fill();
+  }
+  ctx.fillStyle='#00ff88';ctx.font='11px Share Tech Mono';ctx.fillText('SAMPLED+QUANTIZED',sx,14);
+  // Arrow
+  ctx.font='20px sans-serif';ctx.fillStyle='#ffe000';ctx.fillText('→',w/2-20,h/2+6);
+}
+
+// Enhancement
+function drawEnhance(brightness=0, contrast=1) {
+  const cv = document.getElementById('enhance-canvas');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  // Draw gradient bands simulating an image histogram
+  const grad = ctx.createLinearGradient(0,0,w,0);
+  grad.addColorStop(0,'#060616');
+  grad.addColorStop(0.5,`rgba(128,128,200,0.8)`);
+  grad.addColorStop(1,'#ffffff');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,w,h);
+  // Apply brightness/contrast filter via overlay
+  ctx.globalAlpha = Math.abs(brightness)/200;
+  ctx.fillStyle = brightness>0?'#ffffff':'#000000';
+  ctx.fillRect(0,0,w,h);
+  ctx.globalAlpha=1;
+  // Labels
+  ctx.font='bold 12px Rajdhani';
+  ctx.fillStyle='#00ff88';
+  ctx.fillText(`Brightness: ${brightness>0?'+':''}${brightness}  |  Contrast: ${contrast.toFixed(1)}x`,10,20);
+  ctx.fillStyle='#4a5275';ctx.font='11px Share Tech Mono';
+  ctx.fillText('← DARK',8,h-6);ctx.fillText('BRIGHT →',w-70,h-6);
+}
+
+function updateEnhance() {
+  const b=parseInt(document.getElementById('bright-slider').value);
+  const c=parseFloat(document.getElementById('contrast-slider').value);
+  drawEnhance(b,c);
+}
+
+// Restore
+let restoreState='clean';
+function drawRestore(state='clean') {
+  const cv = document.getElementById('restore-canvas');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  // Draw shapes
+  const drawShapes = () => {
+    ctx.fillStyle='#00e5ff33';ctx.fillRect(20,20,80,80);
+    ctx.fillStyle='#ff00c833';ctx.beginPath();ctx.arc(160,60,35,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#00ff8833';ctx.beginPath();ctx.moveTo(220,25);ctx.lineTo(270,95);ctx.lineTo(170,95);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#ffe00033';ctx.fillRect(290,25,70,70);
+  };
+  drawShapes();
+  if(state==='blur') {
+    ctx.filter='blur(4px)';ctx.drawImage(cv,0,0);ctx.filter='none';
+    ctx.fillStyle='#ff9500';ctx.font='12px Share Tech Mono';ctx.fillText('DEGRADED: BLUR APPLIED',10,h-8);
+  } else if(state==='noise') {
+    for(let i=0;i<800;i++){const x=Math.random()*w,y=Math.random()*h;ctx.fillStyle=`rgba(255,255,255,${Math.random()*.5})`;ctx.fillRect(x,y,2,2);}
+    ctx.fillStyle='#ff3355';ctx.font='12px Share Tech Mono';ctx.fillText('DEGRADED: NOISE ADDED',10,h-8);
+  } else if(state==='clean') {
+    ctx.strokeStyle='#00e5ff';ctx.lineWidth=1;ctx.strokeRect(20,20,80,80);
+    ctx.strokeStyle='#ff00c8';ctx.beginPath();ctx.arc(160,60,35,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#00ff88';ctx.beginPath();ctx.moveTo(220,25);ctx.lineTo(270,95);ctx.lineTo(170,95);ctx.closePath();ctx.stroke();
+    ctx.strokeStyle='#ffe000';ctx.strokeRect(290,25,70,70);
+    ctx.fillStyle='#00ff88';ctx.font='12px Share Tech Mono';ctx.fillText('✅ RESTORED / ORIGINAL',10,h-8);
+  }
+}
+function addBlur(){restoreState='blur';drawRestore('blur');}
+function addNoise(){restoreState='noise';drawRestore('noise');}
+function restoreImg(){restoreState='clean';drawRestore('clean');addXP(10,'Used Restore Lab');}
+
+// Colour
+let colorMode='rgb';
+function drawColorModel(mode) {
+  colorMode=mode;
+  const cv=document.getElementById('colour-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  if(mode==='rgb'){
+    const circles=[{x:140,y:50,c:'rgba(255,0,0,0.6)',l:'R'},{x:200,y:50,c:'rgba(0,255,0,0.6)',l:'G'},{x:170,y:90,c:'rgba(0,0,255,0.6)',l:'B'}];
+    circles.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,40,0,Math.PI*2);ctx.fillStyle=c.c;ctx.fill();});
+    ctx.fillStyle='#fff';ctx.font='bold 16px Rajdhani';ctx.fillText('RGB ADDITIVE MODEL',240,40);
+    ctx.fillStyle='#b0b8d0';ctx.font='13px Rajdhani';ctx.fillText('Red + Green + Blue = White',240,65);ctx.fillText('Used in: screens, monitors, cameras',240,85);
+  } else if(mode==='cmy'){
+    const circles=[{x:140,y:50,c:'rgba(0,255,255,0.6)'},{x:200,y:50,c:'rgba(255,0,255,0.6)'},{x:170,y:90,c:'rgba(255,255,0,0.6)'}];
+    circles.forEach(c=>{ctx.beginPath();ctx.arc(c.x,c.y,40,0,Math.PI*2);ctx.fillStyle=c.c;ctx.fill();});
+    ctx.fillStyle='#fff';ctx.font='bold 16px Rajdhani';ctx.fillText('CMY SUBTRACTIVE MODEL',240,40);
+    ctx.fillStyle='#b0b8d0';ctx.font='13px Rajdhani';ctx.fillText('Cyan + Magenta + Yellow = Black',240,65);ctx.fillText('Used in: printers, ink',240,85);
+  } else {
+    ['R','G','B'].forEach((ch,i)=>{
+      const colors=['#ff0000','#00ff00','#0000ff'];
+      const gradient = ctx.createLinearGradient(i*130+10,0,i*130+120,0);
+      gradient.addColorStop(0,'#060616');gradient.addColorStop(1,colors[i]);
+      ctx.fillStyle=gradient;ctx.fillRect(i*130+10,20,110,80);
+      ctx.fillStyle='#fff';ctx.font='bold 14px Orbitron';ctx.fillText(ch+' Channel',i*130+20,16);
+    });
+  }
+}
+function showColorModel(m){drawColorModel(m);addXP(8,'Explored Colour Model');}
+
+// Compression
+function drawCompression(q=20) {
+  const cv=document.getElementById('compress-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  const blockSize = Math.max(2, 22-q);
+  const half=w/2-20;
+  // Original
+  for(let y=0;y<h;y+=8){for(let x=0;x<half;x+=8){
+    const v=Math.sin(x*0.05+y*0.07)*60+100;
+    ctx.fillStyle=`rgb(${v|0},${(v*0.8)|0},${(v*1.2)|0})`;
+    ctx.fillRect(x,y,8,8);
+  }}
+  ctx.fillStyle='rgba(0,229,255,0.9)';ctx.font='11px Share Tech Mono';ctx.fillText('ORIGINAL',6,14);
+  // Compressed (blockier)
+  for(let y=0;y<h;y+=blockSize){for(let x=0;x<half;x+=blockSize){
+    const v=Math.sin(x*0.05+y*0.07)*60+100;
+    ctx.fillStyle=`rgb(${v|0},${(v*0.8)|0},${(v*1.2)|0})`;
+    ctx.fillRect(half+30+x,y,blockSize,blockSize);
+  }}
+  ctx.fillStyle= q>10?'rgba(0,255,136,0.9)':'rgba(255,51,85,0.9)';
+  ctx.font='11px Share Tech Mono';
+  ctx.fillText(q>10?`LOSSLESS Q:${q}`:`LOSSY Q:${q}`,half+36,14);
+  ctx.fillStyle='#ffe000';ctx.font='20px sans-serif';ctx.fillText('→',half,h/2);
+}
+function updateCompression(){
+  const q=parseInt(document.getElementById('quality-slider').value);
+  document.getElementById('quality-label').textContent=`Q:${q}`;
+  drawCompression(q);
+}
+
+// Segmentation
+let segAnim=null,segPhase=0;
+function drawSegment(phase=0) {
+  const cv=document.getElementById('segment-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  // Background noise
+  for(let i=0;i<500;i++){ctx.fillStyle=`rgba(30,40,60,${Math.random()})`;ctx.fillRect(Math.random()*w,Math.random()*h,4,4);}
+  // Objects
+  ctx.fillStyle='#2a3a6a';ctx.fillRect(20,20,80,80);
+  ctx.fillStyle='#1a2a4a';ctx.beginPath();ctx.arc(200,60,40,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#2a2a5a';ctx.beginPath();ctx.moveTo(300,20);ctx.lineTo(360,100);ctx.lineTo(240,100);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#1a3a3a';ctx.fillRect(310,25,60,65);
+  if(phase>0.2){ctx.strokeStyle=`rgba(0,229,255,${Math.min(1,(phase-0.2)*3)})`;ctx.lineWidth=3;ctx.strokeRect(20,20,80,80);}
+  if(phase>0.5){ctx.strokeStyle=`rgba(0,255,136,${Math.min(1,(phase-0.5)*3)})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(200,60,40,0,Math.PI*2);ctx.stroke();}
+  if(phase>0.7){ctx.strokeStyle=`rgba(255,0,200,${Math.min(1,(phase-0.7)*4)})`;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(300,20);ctx.lineTo(360,100);ctx.lineTo(240,100);ctx.closePath();ctx.stroke();}
+  if(phase>0.85){ctx.strokeStyle=`rgba(255,224,0,${Math.min(1,(phase-0.85)*6)})`;ctx.lineWidth=3;ctx.strokeRect(310,25,60,65);}
+  if(phase>=1){ctx.fillStyle='#00ff88';ctx.font='11px Share Tech Mono';ctx.fillText('✅ 4 REGIONS SEGMENTED',10,h-8);}
+}
+function runSegmentation(){
+  if(segAnim)clearInterval(segAnim);
+  segPhase=0;
+  segAnim=setInterval(()=>{
+    segPhase=Math.min(1,segPhase+0.02);
+    drawSegment(segPhase);
+    if(segPhase>=1){clearInterval(segAnim);addXP(12,'Ran Segmentation');}
+  },30);
+}
+function resetSegment(){if(segAnim)clearInterval(segAnim);segPhase=0;drawSegment(0);}
+
+// Recognition
+function drawRecog() {
+  const cv=document.getElementById('recog-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  // Face outline
+  ctx.strokeStyle='#00e5ff';ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(70,60,35,45,0,0,Math.PI*2);ctx.stroke();
+  // Eyes
+  ctx.beginPath();ctx.arc(57,48,6,0,Math.PI*2);ctx.fillStyle='#00e5ff44';ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(83,48,6,0,Math.PI*2);ctx.fill();ctx.stroke();
+  // Feature points
+  const pts=[[57,48],[83,48],[70,60],[60,72],[80,72],[70,40]];
+  let t=Date.now()/1000;
+  pts.forEach((p,i)=>{
+    const pulse=0.5+0.5*Math.sin(t*3+i);
+    ctx.beginPath();ctx.arc(p[0],p[1],4,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,224,0,${pulse})`;ctx.fill();
+    ctx.strokeStyle='#ffe000';ctx.lineWidth=1;ctx.stroke();
+  });
+  // Lines connecting
+  ctx.strokeStyle='#ffe00044';ctx.lineWidth=1;
+  pts.forEach((p,i)=>{if(i<pts.length-1){ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(pts[i+1][0],pts[i+1][1]);ctx.stroke();}});
+  // Labels panel
+  const labels=['FACE','CAT','MASK','ROBOT'];
+  const confs=[0.97,0.01,0.01,0.01];
+  ctx.fillStyle='#fff';ctx.font='bold 11px Orbitron';ctx.fillText('RECOGNITION',140,18);
+  labels.forEach((l,i)=>{
+    const bar=confs[i]*120;
+    ctx.fillStyle='#1a1a3e';ctx.fillRect(140,30+i*22,120,14);
+    ctx.fillStyle=i===0?'#00ff88':'#2a2a4e';ctx.fillRect(140,30+i*22,bar,14);
+    ctx.fillStyle=i===0?'#00ff88':'#4a5275';ctx.font='10px Rajdhani';
+    ctx.fillText(`${l}: ${(confs[i]*100).toFixed(0)}%`,268,42+i*22);
+  });
+  requestAnimationFrame(drawRecog);
+}
+
+// ─── LAB ───
+function drawLabAll(transform) {
+  drawLabInput();
+  drawLabOutput(transform);
+  drawLabCurve(transform);
+}
+
+function drawLabInput() {
+  const cv=document.getElementById('lab-input');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  // Gradient gradient image
+  for(let x=0;x<w;x++){
+    const v=Math.floor((x/w)*255);
+    ctx.fillStyle=`rgb(${v},${v},${v})`;
+    ctx.fillRect(x,0,1,h/2);
+  }
+  // Checkerboard-ish scene
+  for(let y=h/2;y<h;y+=10){
+    for(let x=0;x<w;x+=10){
+      const v=(x+y)%20===0?30:180;
+      ctx.fillStyle=`rgb(${v},${v},${Math.min(255,v+40)})`;
+      ctx.fillRect(x,y,10,10);
+    }
+  }
+  ctx.fillStyle='rgba(0,229,255,0.8)';ctx.font='11px Share Tech Mono';ctx.fillText('INPUT r',4,12);
+}
+
+function applyTransform(r, transform) {
+  const L=255;
+  switch(transform) {
+    case 'identity': return r;
+    case 'negative': return L-r;
+    case 'log': return Math.min(255, Math.round(45*Math.log(1+r)));
+    case 'power': {
+      const g=parseFloat(document.getElementById('gamma-slider').value);
+      return Math.min(255,Math.round(255*Math.pow(r/255,g)));
+    }
+    case 'threshold': {
+      const k=parseInt(document.getElementById('thresh-slider')?document.getElementById('thresh-slider').value:128);
+      return r<=k?0:255;
+    }
+    default: return r;
+  }
+}
+
+function drawLabOutput(transform) {
+  const cvIn=document.getElementById('lab-input');
+  const cvOut=document.getElementById('lab-output');
+  if(!cvOut||!cvIn)return;
+  const ctxIn=cvIn.getContext('2d');
+  const ctxOut=cvOut.getContext('2d');
+  const w=cvOut.width,h=cvOut.height;
+  ctxOut.clearRect(0,0,w,h);
+  const imgData=ctxIn.getImageData(0,0,w,h);
+  const out=ctxOut.createImageData(w,h);
+  for(let i=0;i<imgData.data.length;i+=4){
+    const r=imgData.data[i];
+    const s=applyTransform(r,transform);
+    out.data[i]=out.data[i+1]=out.data[i+2]=s;
+    out.data[i+3]=255;
+  }
+  ctxOut.putImageData(out,0,0);
+  ctxOut.fillStyle='rgba(255,224,0,0.8)';ctxOut.font='11px Share Tech Mono';ctxOut.fillText('OUTPUT s',4,12);
+}
+
+function drawLabCurve(transform) {
+  const cv=document.getElementById('lab-curve');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  // Grid
+  ctx.strokeStyle='#1a1a3e';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const x=40+i*(w-50)/4, y=10+i*(h-50)/4;
+    ctx.beginPath();ctx.moveTo(x,10);ctx.lineTo(x,h-40);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(w-10,y);ctx.stroke();
+  }
+  // Axes
+  ctx.strokeStyle='#4a5275';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(40,h-40);ctx.lineTo(w-10,h-40);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(40,h-40);ctx.lineTo(40,10);ctx.stroke();
+  ctx.fillStyle='#4a5275';ctx.font='11px Share Tech Mono';
+  ctx.fillText('0',32,h-38);ctx.fillText('L-1',w-26,h-38);
+  ctx.fillText('r',w-10,h-38);ctx.fillText('s',28,16);
+  // Curve
+  const colors={identity:'#00e5ff',negative:'#ff3355',log:'#00ff88',power:'#ff9500',threshold:'#ffe000'};
+  ctx.strokeStyle=colors[transform]||'#00e5ff';ctx.lineWidth=3;
+  ctx.shadowBlur=8;ctx.shadowColor=ctx.strokeStyle;
+  ctx.beginPath();
+  for(let r=0;r<=255;r++){
+    const s=applyTransform(r,transform);
+    const x=40+(r/255)*(w-60);
+    const y=(h-40)-(s/255)*(h-50);
+    r===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle=colors[transform];ctx.font='bold 12px Orbitron';
+  ctx.fillText(transform.toUpperCase()+' TRANSFORM',w/2-60,h-6);
+}
+
+const transformInfos = {
+  identity:{title:'Identity Transform',text:'s = r. Output equals input exactly. The diagonal line in the graph. No change to pixel values — used as a reference baseline for comparing other transforms.'},
+  negative:{title:'Negative Transform (L-1-r)',text:'s = L-1-r. Inverts all intensities. Dark pixels become bright, bright become dark — like a film negative. Useful for enhancing white detail in dark regions of medical X-ray images.'},
+  log:{title:'Log Transformation',text:'s = c·log(1+r). Compresses high-intensity values and expands low-intensity values. Makes dark regions more visible. Commonly used to display Fourier spectrum. Inverse log does the opposite.'},
+  power:{title:'Power Law / Gamma Correction',text:'s = c·r^γ. When γ < 1: brightens the image (useful for dark images). When γ > 1: darkens the image. Critical for display calibration — CRT monitors had built-in gamma of ≈2.2.'},
+  threshold:{title:'Threshold Transform',text:'Creates a binary image. Pixels ≤ K become 0 (black); pixels > K become 255 (white). Simple but powerful for separating objects from background in controlled lighting conditions.'}
+};
+
+function setTransform(t) {
+  document.querySelectorAll('[id^="btn-"]').forEach(b=>b.classList.remove('active-btn'));
+  document.getElementById('btn-'+t).classList.add('active-btn');
+  document.getElementById('gamma-ctrl').style.display = t==='power'?'block':'none';
+  drawLabAll(t);
+  const info=transformInfos[t];
+  document.getElementById('transform-info').innerHTML=`<h3 style="font-family:'Orbitron',monospace;color:var(--cyan);margin-bottom:8px;">${info.title}</h3><p style="color:#b0b8d0;font-size:1rem;line-height:1.6;">${info.text}</p>`;
+  addXP(8, info.title);
+  document.getElementById('gamma-val').textContent=parseFloat(document.getElementById('gamma-slider').value).toFixed(1);
+}
+
+// ─── FREQUENCY DOMAIN ───
+function drawFreqPipeline() {
+  const cv=document.getElementById('freq-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  const steps=[
+    {label:'Spatial\nImage',color:'#00e5ff'},
+    {label:'Forward\nTransform',color:'#ff9500'},
+    {label:'Filter\n(Freq.)',color:'#ff00c8'},
+    {label:'Inverse\nTransform',color:'#ff9500'},
+    {label:'Output\nImage',color:'#00ff88'}
+  ];
+  const sw=w/(steps.length+1);
+  steps.forEach((s,i)=>{
+    const x=sw*(i+0.5)+10;
+    ctx.fillStyle=s.color+'33';ctx.strokeStyle=s.color;ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(x-35,10,70,60,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle=s.color;ctx.font='10px Share Tech Mono';ctx.textAlign='center';
+    s.label.split('\n').forEach((l,li)=>ctx.fillText(l,x,28+li*14));
+    if(i<steps.length-1){
+      ctx.strokeStyle='#4a5275';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x+35,40);ctx.lineTo(x+sw-30,40);ctx.stroke();
+      ctx.fillStyle='#4a5275';ctx.textAlign='left';ctx.fillText('→',x+sw-34,44);
+    }
+  });
+  ctx.textAlign='left';
+}
+
+// ─── THRESHOLD ───
+function drawThresh(k) {
+  const cv=document.getElementById('thresh-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height;
+  ctx.clearRect(0,0,w,h);ctx.fillStyle='#060616';ctx.fillRect(0,0,w,h);
+  // Left: gradient
+  for(let x=0;x<w/2-10;x++){
+    const v=Math.floor((x/(w/2-10))*255);
+    ctx.fillStyle=`rgb(${v},${v},${v})`;
+    ctx.fillRect(x,0,1,h);
+  }
+  // Right: thresholded
+  const sx=w/2+10;
+  for(let x=0;x<w/2-10;x++){
+    const v=Math.floor((x/(w/2-10))*255);
+    ctx.fillStyle=v<=k?'#000000':'#ffffff';
+    ctx.fillRect(sx+x,0,1,h);
+  }
+  // Threshold line
+  const tx=(k/255)*(w/2-10);
+  ctx.strokeStyle='#ff3355';ctx.lineWidth=2;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(tx,0);ctx.lineTo(tx,h);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ff3355';ctx.font='11px Share Tech Mono';ctx.fillText('← 0 (black)','sx+2',14);
+  // Labels
+  ctx.fillStyle='#00e5ff';ctx.font='10px Share Tech Mono';ctx.fillText('ORIGINAL',4,14);
+  ctx.fillStyle='#ffe000';ctx.fillText('BINARY',sx+4,14);
+  ctx.fillStyle='#ff3355';ctx.fillText(`K=${k}`,tx-10,h-4);
+}
+function updateThresh() {
+  const k=parseInt(document.getElementById('thresh-slider').value);
+  document.getElementById('thresh-val').textContent=`K=${k}`;
+  drawThresh(k);
+}
+
+// ─── QUIZ ───
+const questions=[
+  {q:'What is the FIRST step in the digital image processing pipeline?',opts:['Image Enhancement','Image Restoration','Image Acquisition','Image Segmentation'],ans:2,exp:'Image Acquisition is always the first step — you need to capture/digitize the image before any processing can occur!'},
+  {q:'Image Enhancement is considered a ________ process.',opts:['Objective','Mathematical','Subjective','Statistical'],ans:2,exp:'Enhancement is SUBJECTIVE — it depends on what looks good to the human observer. There\'s no single "correct" enhanced image.'},
+  {q:'Which formula describes intensity transformation?',opts:['s = f(x,y)','s = T(r)','g = F(u,v)','r = T(s)'],ans:1,exp:'s = T(r) where r is input intensity, s is output intensity, and T is the transformation function applied to each pixel.'},
+  {q:'JPEG compression is which type?',opts:['Lossless','Reversible','Lossy','Lossless+Lossy'],ans:2,exp:'JPEG is LOSSY — data is permanently discarded to achieve higher compression. PNG is lossless (no data lost).'},
+  {q:'What does Image Restoration aim to do?',opts:['Make images look more beautiful','Recover the original image from degradation','Convert to frequency domain','Segment objects'],ans:1,exp:'Restoration has a specific objective: recover/reconstruct the true original image from a degraded version (blur, noise, etc.)'},
+  {q:'Which colour model is SUBTRACTIVE (used in printing)?',opts:['RGB','HSV','CMY','YUV'],ans:2,exp:'CMY (Cyan, Magenta, Yellow) is subtractive — mixing all three gives black. RGB is additive (mixing gives white), used in screens.'},
+  {q:'In Power Law transform, γ < 1 will:',opts:['Darken the image','Brighten the image','Invert the image','Create binary image'],ans:1,exp:'γ < 1 maps darker intensities to brighter outputs (brightening). γ > 1 darkens. This is used in gamma correction for displays.'},
+  {q:'What does Image Segmentation do?',opts:['Compress the image','Remove noise','Divide image into meaningful regions','Recognize objects'],ans:2,exp:'Segmentation divides the image into distinct, meaningful regions or objects, separating them from the background.'},
+  {q:'The Negative transform formula is:',opts:['s = r','s = c·log(1+r)','s = L-1-r','s = r^γ'],ans:2,exp:'Negative: s = (L-1) - r where L is the number of intensity levels (typically 256, so L-1 = 255). It inverts all pixel values.'},
+  {q:'Image Segmentation is used in medical imaging to:',opts:['Reduce file size','Enhance colours','Separate tumours from scans','Convert to binary'],ans:2,exp:'Segmentation can isolate (separate) a tumour region from surrounding tissue in a medical scan, enabling precise analysis.'}
+];
+
+let qIdx=0,qScore=0,qStreak=0,qAnswered=false;
+
+function loadQuestion() {
+  if(qIdx>=questions.length){showQuizDone();return;}
+  const q=questions[qIdx];
+  document.getElementById('q-num').textContent=qIdx+1;
+  document.getElementById('q-total').textContent=questions.length;
+  document.getElementById('quiz-q').textContent=q.q;
+  const opts=document.getElementById('quiz-opts');
+  opts.innerHTML='';
+  q.opts.forEach((o,i)=>{
+    const btn=document.createElement('button');
+    btn.className='q-opt';btn.textContent=o;
+    btn.onclick=()=>answerQ(i);
+    opts.appendChild(btn);
+  });
+  document.getElementById('quiz-feedback').style.display='none';
+  document.getElementById('next-btn').style.display='none';
+  qAnswered=false;
+}
+
+function answerQ(chosen) {
+  if(qAnswered)return;qAnswered=true;
+  const q=questions[qIdx];
+  const opts=document.querySelectorAll('.q-opt');
+  opts.forEach(o=>o.classList.add('disabled'));
+  const fb=document.getElementById('quiz-feedback');
+  fb.style.display='block';
+  if(chosen===q.ans){
+    opts[chosen].classList.add('correct');
+    fb.className='quiz-feedback correct';
+    fb.textContent='✅ Correct! '+q.exp;
+    qScore++;qStreak++;
+    addXP(qStreak>1?20:15,'Correct Answer');
+    if(qStreak>=3) showAchievement('🔥','HOT STREAK!',`${qStreak} correct in a row!`);
+  } else {
+    opts[chosen].classList.add('wrong');
+    opts[q.ans].classList.add('correct');
+    fb.className='quiz-feedback wrong';
+    fb.textContent='❌ Incorrect. '+q.exp;
+    qStreak=0;streak=0;
+    document.getElementById('streak-display').textContent='🔥 0 streak';
+  }
+  document.getElementById('next-btn').style.display='block';
+}
+
+function nextQuestion(){qIdx++;loadQuestion();}
+function showQuizDone(){
+  document.getElementById('quiz-container').style.display='none';
+  document.getElementById('quiz-done').style.display='block';
+  document.getElementById('quiz-final-score').textContent=`You scored ${qScore}/${questions.length} — ${Math.round(qScore/questions.length*100)}% accuracy!`;
+  const xpGained=qScore*20;addXP(xpGained,'Quiz Completed');
+  if(qScore===questions.length) showAchievement('🏆','PERFECT SCORE!','You answered all 10 questions correctly!');
+}
+function restartQuiz(){
+  qIdx=0;qScore=0;qStreak=0;
+  document.getElementById('quiz-container').style.display='block';
+  document.getElementById('quiz-done').style.display='none';
+  loadQuestion();
+}
+
+// ─── TOAST ───
+function showToast(msg, isAchievement=false) {
+  const t=document.getElementById('toast');
+  const el=document.createElement('div');
+  el.className='toast-msg'+(isAchievement?' achievement':'');
+  el.textContent=msg;
+  t.appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+
+// ─── ACHIEVEMENT ───
+function showAchievement(icon, title, sub) {
+  document.getElementById('unlock-icon').textContent=icon;
+  document.getElementById('unlock-title').textContent=title;
+  document.getElementById('unlock-sub').textContent=sub;
+  document.getElementById('unlock-pop').classList.add('show');
+  showToast('🏅 '+title, true);
+}
+function closeUnlock(){document.getElementById('unlock-pop').classList.remove('show');}
+
+// ─── INIT ───
+window.addEventListener('load',()=>{
+  animatePipeline();
+  drawAcquisition();
+  loadQuestion();
+  setTimeout(()=>showToast('🎮 Welcome to DIP Quest! Start exploring the pipeline!'),800);
+  setTimeout(()=>showToast('💡 Tip: Complete all 7 steps to unlock achievements!'),2500);
+});
+</script>
+</body>
+</html>
