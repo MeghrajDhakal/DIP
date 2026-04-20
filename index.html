@@ -94,6 +94,29 @@ input[type=range]{accent-color:var(--ca,var(--c));width:130px;cursor:pointer;}
 .xpb{position:absolute;top:10px;right:10px;background:var(--g);color:#000;font-family:'Orbitron',monospace;font-size:.58rem;padding:3px 8px;border-radius:16px;font-weight:900;}
 .done{background:var(--g)!important;color:#000!important;}
 @media(max-width:580px){.g2,.g3{grid-template-columns:1fr;}.logo{font-size:1.7rem;}}
+
+/* NUMERICALS */
+.num-matrix{display:inline-grid;gap:3px;margin:4px 0;}
+.num-cell{width:52px;height:52px;border-radius:8px;border:1.5px solid #141432;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:.85rem;color:var(--txt);background:#070718;transition:all .4s;position:relative;cursor:default;}
+.num-cell .lbl{font-size:.6rem;color:var(--dim);margin-bottom:1px;font-family:'Orbitron',monospace;}
+.num-cell .val{font-weight:bold;font-size:.9rem;}
+.num-cell.active{border-color:var(--c);background:#0a1830;box-shadow:0 0 16px var(--c)44;color:var(--c);}
+.num-cell.done{border-color:var(--g);background:#0a1f14;color:var(--g);}
+.num-cell.hl{border-color:var(--y);background:#1a1500;color:var(--y);transform:scale(1.1);box-shadow:0 0 20px var(--y)44;}
+.num-cell.zero{border-color:var(--dim);background:#050510;color:var(--dim);}
+.num-cell.white{border-color:var(--c);background:#0a1830;color:#fff;}
+.step-log{background:#030310;border:1px solid #141432;border-radius:10px;padding:12px 16px;margin-top:10px;max-height:200px;overflow-y:auto;font-family:'Share Tech Mono',monospace;font-size:.76rem;line-height:1.8;}
+.step-log:empty{display:none;}
+.step-entry{opacity:0;transform:translateX(-12px);animation:slogIn .35s ease forwards;}
+@keyframes slogIn{to{opacity:1;transform:translateX(0);}}
+.step-entry.result{color:var(--g);}
+.step-entry.formula{color:var(--c);}
+.step-entry.heading{color:var(--y);font-family:'Orbitron',monospace;margin-top:6px;}
+.step-entry.note{color:var(--m);}
+.practice-box{background:#060618;border:1px solid #141432;border-radius:10px;padding:14px 16px;margin-top:10px;}
+.num-input{background:#060618;border:1px solid #222244;border-radius:6px;color:var(--txt);font-family:'Share Tech Mono',monospace;font-size:.82rem;padding:7px 10px;outline:none;transition:border-color .2s;width:100%;}
+.num-input:focus{border-color:var(--c);box-shadow:0 0 8px var(--c)33;}
+
 </style>
 </head>
 <body>
@@ -121,6 +144,7 @@ input[type=range]{accent-color:var(--ca,var(--c));width:130px;cursor:pointer;}
   <button class="tb" style="--acc:#00ff88" onclick="go('recog',this)"><span class="ti">🤖</span>Recognise</button>
   <button class="tb" style="--acc:#ffe000" onclick="go('lab',this)"><span class="ti">📈</span>Lab</button>
   <button class="tb" style="--acc:#ff3355" onclick="go('quiz',this)"><span class="ti">🎯</span>Quiz</button>
+  <button class="tb" style="--acc:#00ff88" onclick="go('num',this)"><span class="ti">🔢</span>Numericals</button>
 </div>
 
 <!-- PIPELINE -->
@@ -333,6 +357,206 @@ input[type=range]{accent-color:var(--ca,var(--c));width:130px;cursor:pointer;}
     <button class="nxt" style="display:inline-block" onclick="RQ()">PLAY AGAIN 🔄</button>
   </div>
 </div>
+<!-- ══════════════ NUMERICALS ══════════════ -->
+<div class="sec" id="s-num">
+<div style="font-family:'Orbitron',monospace;color:var(--c);font-size:1rem;letter-spacing:3px;margin-bottom:6px;">🔢 SOLVED NUMERICALS — STEP BY STEP</div>
+<div style="color:var(--dim);font-size:.82rem;margin-bottom:14px;font-family:'Share Tech Mono',monospace;">From your notes — tap SOLVE to watch each step animate</div>
+
+<!-- NUM 1: LOG TRANSFORM -->
+<div class="card" style="--ca:#00ff88" id="num1-card">
+  <div class="ch"><div class="cn" style="color:var(--g)">N1</div><div><div class="ct">LOG TRANSFORMATION</div><div style="color:var(--dim);font-size:.78rem">s = c·log₁₀(1+r) — From your notes (13-3-26)</div></div></div>
+  <div class="cb">Given a 3×3 pixel matrix, <strong>c = 1</strong>. Apply log transformation to each pixel.</div>
+  <div class="fml" style="--ca:#00ff88">s = c · log₁₀(1 + r) &nbsp;|&nbsp; c = 1 &nbsp;|&nbsp; s = log₁₀(1 + r)</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#00ff88" onclick="numSolve(1)">▶ SOLVE STEP BY STEP</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="numReset(1)">↺ Reset</button>
+    <button class="btn" style="--ca:#ffe000" onclick="numPractice(1)">✏️ Try Your Own</button>
+  </div>
+  <div class="g2" style="margin:10px 0;">
+    <div>
+      <div style="font-family:'Orbitron',monospace;color:var(--g);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">INPUT MATRIX r</div>
+      <div id="n1-in" class="num-matrix"></div>
+    </div>
+    <div>
+      <div style="font-family:'Orbitron',monospace;color:var(--y);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">OUTPUT MATRIX s</div>
+      <div id="n1-out" class="num-matrix"></div>
+    </div>
+  </div>
+  <div class="cw"><canvas id="cv-n1" width="580" height="100"></canvas><div class="cl">TRANSFORMATION CURVE — LOG</div></div>
+  <div id="n1-steps" class="step-log"></div>
+  <div id="n1-practice" style="display:none;" class="practice-box">
+    <div style="font-family:'Orbitron',monospace;color:var(--g);font-size:.78rem;margin-bottom:8px;">ENTER YOUR 3×3 MATRIX (space-separated rows):</div>
+    <div style="display:grid;gap:6px;">
+      <input type="text" id="n1-r0" placeholder="Row 1: e.g. 0 1 2" class="num-input">
+      <input type="text" id="n1-r1" placeholder="Row 2: e.g. 3 4 5" class="num-input">
+      <input type="text" id="n1-r2" placeholder="Row 3: e.g. 6 7 8" class="num-input">
+      <div class="ctrl"><span class="rl">c =</span><input type="number" id="n1-c" value="1" step="0.1" class="num-input" style="width:60px;"><button class="btn" style="--ca:#00ff88" onclick="numCustomSolve(1)">CALCULATE</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- NUM 2: NEGATIVE TRANSFORM -->
+<div class="card" style="--ca:#ff3355" id="num2-card">
+  <div class="ch"><div class="cn" style="color:var(--r)">N2</div><div><div class="ct">NEGATIVE TRANSFORM</div><div style="color:var(--dim);font-size:.78rem">s = (L-1) - r &nbsp;|&nbsp; L = 256</div></div></div>
+  <div class="cb">Given a pixel matrix, apply the <strong>negative transform</strong>. Every bright pixel becomes dark and vice versa. L = 256, so L-1 = 255.</div>
+  <div class="fml" style="--ca:#ff3355">s = (L−1) − r = 255 − r &nbsp;&nbsp; (for 8-bit: L=256)</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#ff3355" onclick="numSolve(2)">▶ SOLVE STEP BY STEP</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="numReset(2)">↺ Reset</button>
+    <button class="btn" style="--ca:#ffe000" onclick="numPractice(2)">✏️ Try Your Own</button>
+  </div>
+  <div class="g2" style="margin:10px 0;">
+    <div><div style="font-family:'Orbitron',monospace;color:var(--r);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">INPUT r</div><div id="n2-in" class="num-matrix"></div></div>
+    <div><div style="font-family:'Orbitron',monospace;color:var(--y);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">OUTPUT s = 255-r</div><div id="n2-out" class="num-matrix"></div></div>
+  </div>
+  <div class="cw"><canvas id="cv-n2" width="580" height="100"></canvas><div class="cl">INTENSITY MAPPING — NEGATIVE</div></div>
+  <div id="n2-steps" class="step-log"></div>
+  <div id="n2-practice" style="display:none;" class="practice-box">
+    <div style="font-family:'Orbitron',monospace;color:var(--r);font-size:.78rem;margin-bottom:8px;">ENTER YOUR MATRIX:</div>
+    <div style="display:grid;gap:6px;">
+      <input type="text" id="n2-r0" placeholder="Row 1: e.g. 100 150 200" class="num-input">
+      <input type="text" id="n2-r1" placeholder="Row 2: e.g. 50 75 25" class="num-input">
+      <input type="text" id="n2-r2" placeholder="Row 3: e.g. 255 128 0" class="num-input">
+      <button class="btn" style="--ca:#ff3355" onclick="numCustomSolve(2)">CALCULATE</button>
+    </div>
+  </div>
+</div>
+
+<!-- NUM 3: POWER LAW -->
+<div class="card" style="--ca:#ff9500" id="num3-card">
+  <div class="ch"><div class="cn" style="color:#ff9500">N3</div><div><div class="ct">POWER LAW (GAMMA CORRECTION)</div><div style="color:var(--dim);font-size:.78rem">s = c · r^γ &nbsp;|&nbsp; Gamma Correction</div></div></div>
+  <div class="cb">Apply <strong>power law transformation</strong>. c and γ are positive constants. When r=0: s = c(r+ε)^γ to avoid singularity.</div>
+  <div class="fml" style="--ca:#ff9500">s = c · r^γ &nbsp;&nbsp; (c=1 for normalized 0–1 range)</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#ff9500" onclick="numSolve(3)">▶ SOLVE STEP BY STEP</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="numReset(3)">↺ Reset</button>
+    <button class="btn" style="--ca:#ffe000" onclick="numPractice(3)">✏️ Try Your Own</button>
+  </div>
+  <div class="ctrl">
+    <span class="rl">γ =</span>
+    <input type="range" id="n3-gamma" style="--ca:#ff9500" min="0.1" max="5" step="0.1" value="0.5" oninput="n3GammaChange(this.value)">
+    <span class="rv" id="n3-gv" style="color:#ff9500">0.5</span>
+    <span class="rl" style="margin-left:10px">Effect:</span>
+    <span id="n3-effect" style="font-family:'Share Tech Mono',monospace;font-size:.76rem;color:var(--g)">BRIGHTENS (γ&lt;1)</span>
+  </div>
+  <div class="g2" style="margin:10px 0;">
+    <div><div style="font-family:'Orbitron',monospace;color:#ff9500;font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">INPUT r (0–255)</div><div id="n3-in" class="num-matrix"></div></div>
+    <div><div style="font-family:'Orbitron',monospace;color:var(--y);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">OUTPUT s = r^γ×255</div><div id="n3-out" class="num-matrix"></div></div>
+  </div>
+  <div class="cw"><canvas id="cv-n3" width="580" height="100"></canvas><div class="cl" id="cl-n3">POWER LAW CURVE — γ=0.5</div></div>
+  <div id="n3-steps" class="step-log"></div>
+  <div id="n3-practice" style="display:none;" class="practice-box">
+    <div style="font-family:'Orbitron',monospace;color:#ff9500;font-size:.78rem;margin-bottom:8px;">ENTER YOUR MATRIX + γ:</div>
+    <div style="display:grid;gap:6px;">
+      <input type="text" id="n3-r0" placeholder="Row 1: e.g. 0 64 128" class="num-input">
+      <input type="text" id="n3-r1" placeholder="Row 2: e.g. 192 255 100" class="num-input">
+      <input type="text" id="n3-r2" placeholder="Row 3: e.g. 50 150 200" class="num-input">
+      <div class="ctrl"><span class="rl">γ =</span><input type="number" id="n3-cg" value="0.5" step="0.1" class="num-input" style="width:60px;"><button class="btn" style="--ca:#ff9500" onclick="numCustomSolve(3)">CALCULATE</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- NUM 4: THRESHOLD -->
+<div class="card" style="--ca:#ffe000" id="num4-card">
+  <div class="ch"><div class="cn" style="color:var(--y)">N4</div><div><div class="ct">THRESHOLD TRANSFORM</div><div style="color:var(--dim);font-size:.78rem">Binary Image — s = 0 or L-1</div></div></div>
+  <div class="cb">Create a <strong>binary image</strong>. Pixels ≤ K → 0 (black). Pixels > K → 255 (white). Useful for separating objects from background.</div>
+  <div class="fml" style="--ca:#ffe000">s = 0 if r ≤ K &nbsp;&nbsp;&nbsp; s = 255 if r > K</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#ffe000" onclick="numSolve(4)">▶ SOLVE STEP BY STEP</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="numReset(4)">↺ Reset</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="numPractice(4)">✏️ Try Your Own</button>
+  </div>
+  <div class="ctrl">
+    <span class="rl">K =</span>
+    <input type="range" id="n4-k" style="--ca:#ffe000" min="0" max="255" value="4" oninput="n4KChange(this.value)">
+    <span class="rv" id="n4-kv" style="color:var(--y)">4</span>
+  </div>
+  <div class="g2" style="margin:10px 0;">
+    <div><div style="font-family:'Orbitron',monospace;color:var(--y);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">INPUT r</div><div id="n4-in" class="num-matrix"></div></div>
+    <div><div style="font-family:'Orbitron',monospace;color:var(--c);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">OUTPUT (Binary)</div><div id="n4-out" class="num-matrix"></div></div>
+  </div>
+  <div class="cw"><canvas id="cv-n4" width="580" height="100"></canvas><div class="cl">THRESHOLD MAPPING CURVE</div></div>
+  <div id="n4-steps" class="step-log"></div>
+  <div id="n4-practice" style="display:none;" class="practice-box">
+    <div style="font-family:'Orbitron',monospace;color:var(--y);font-size:.78rem;margin-bottom:8px;">ENTER YOUR MATRIX + K:</div>
+    <div style="display:grid;gap:6px;">
+      <input type="text" id="n4-r0" placeholder="Row 1: e.g. 2 0 1 7" class="num-input">
+      <input type="text" id="n4-r1" placeholder="Row 2: e.g. 2 3 4 1" class="num-input">
+      <input type="text" id="n4-r2" placeholder="Row 3: e.g. 1 3 2 1" class="num-input">
+      <div class="ctrl"><span class="rl">K =</span><input type="number" id="n4-ck" value="4" class="num-input" style="width:60px;"><button class="btn" style="--ca:#ffe000" onclick="numCustomSolve(4)">CALCULATE</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- NUM 5: INTENSITY LEVEL SLICING -->
+<div class="card" style="--ca:#ff00c8" id="num5-card">
+  <div class="ch"><div class="cn" style="color:var(--m)">N5</div><div><div class="ct">INTENSITY LEVEL SLICING</div><div style="color:var(--dim);font-size:.78rem">From your notes — Region 5 to 7, L=8</div></div></div>
+  <div class="cb">Highlights a <strong>specific range of intensities</strong> (region of interest). Two modes:<br>• <strong>Without background:</strong> Only region pixels shown, rest = 0<br>• <strong>With background:</strong> Region highlighted, rest preserved</div>
+  <div class="fml" style="--ca:#ff00c8">s = L-1 if A ≤ r ≤ B &nbsp;|&nbsp; s = 0 (or r) otherwise</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#ff00c8" onclick="numSolve(5,'no-bg')">▶ Without Background</button>
+    <button class="btn" style="--ca:#00ff88" onclick="numSolve(5,'bg')">▶ With Background</button>
+    <button class="btn" style="--ca:#00e5ff" onclick="numReset(5)">↺ Reset</button>
+  </div>
+  <div class="ctrl">
+    <span class="rl">A (low) =</span><input type="number" id="n5-a" value="5" min="0" max="7" class="num-input" style="width:52px;">
+    <span class="rl">B (high) =</span><input type="number" id="n5-b" value="7" min="0" max="7" class="num-input" style="width:52px;">
+    <span class="rl">L =</span><span style="font-family:'Share Tech Mono',monospace;color:var(--m)">8</span>
+  </div>
+  <div class="g2" style="margin:10px 0;">
+    <div><div style="font-family:'Orbitron',monospace;color:var(--m);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">INPUT MATRIX (5×4, L=8)</div><div id="n5-in" class="num-matrix"></div></div>
+    <div><div style="font-family:'Orbitron',monospace;color:var(--y);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">OUTPUT</div><div id="n5-out" class="num-matrix"></div></div>
+  </div>
+  <div class="cw"><canvas id="cv-n5" width="580" height="100"></canvas><div class="cl">INTENSITY LEVEL SLICING VISUALIZATION</div></div>
+  <div id="n5-steps" class="step-log"></div>
+</div>
+
+<!-- NUM 6: BIT PLANE SLICING -->
+<div class="card" style="--ca:#00e5ff" id="num6-card">
+  <div class="ch"><div class="cn">N6</div><div><div class="ct">BIT PLANE SLICING</div><div style="color:var(--dim);font-size:.78rem">From your notes — L=256, k=8 bits, MSB/LSB</div></div></div>
+  <div class="cb">Decompose each pixel (8-bit) into <strong>8 individual bit planes</strong>.<br>• <strong>MSB (Bit 7)</strong> = Most significant — contains most image info<br>• <strong>LSB (Bit 0)</strong> = Least significant — least information</div>
+  <div class="fml" style="--ca:#00e5ff">2^K = 256 &nbsp;|&nbsp; K=8 bits &nbsp;|&nbsp; Pixel = b₇b₆b₅b₄b₃b₂b₁b₀</div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#00e5ff" onclick="numSolve(6)">▶ DECOMPOSE TO BITS</button>
+    <button class="btn" style="--ca:#00ff88" onclick="numSolvePlane(6,7)">MSB (Plane 7)</button>
+    <button class="btn" style="--ca:#ffe000" onclick="numSolvePlane(6,2)">Plane 2</button>
+    <button class="btn" style="--ca:#ff3355" onclick="numSolvePlane(6,0)">LSB (Plane 0)</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="numReset(6)">↺ Reset</button>
+  </div>
+  <div class="g2" style="margin:10px 0;">
+    <div><div style="font-family:'Orbitron',monospace;color:var(--c);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">INPUT PIXEL VALUES</div><div id="n6-in" class="num-matrix"></div></div>
+    <div><div style="font-family:'Orbitron',monospace;color:var(--y);font-size:.72rem;margin-bottom:6px;letter-spacing:2px;">BINARY REPRESENTATION</div><div id="n6-binary" class="num-matrix" style="font-size:.65rem;"></div></div>
+  </div>
+  <div class="cw"><canvas id="cv-n6" width="580" height="130"></canvas><div class="cl" id="cl-n6">BIT PLANE VISUALIZATION</div></div>
+  <div id="n6-steps" class="step-log"></div>
+</div>
+
+<!-- NUM 7: CONTRAST STRETCHING -->
+<div class="card" style="--ca:#00ff88" id="num7-card">
+  <div class="ch"><div class="cn" style="color:var(--g)">N7</div><div><div class="ct">CONTRAST STRETCHING</div><div style="color:var(--dim);font-size:.78rem">From your notes (4-4-26) — 3 cases</div></div></div>
+  <div class="cb">Piecewise linear transform with control points (r₁,s₁) and (r₂,s₂).<br>• <strong>Case 1:</strong> r₁=r₂, s₁=s₂ → Identity (no change)<br>• <strong>Case 2:</strong> r₁=r₂, s₁=0, s₂=L-1 → <strong>Binary image</strong><br>• <strong>Case 3:</strong> r₁=rmin, r₂=rmax, s₁=0, s₂=L-1 → <strong>Full contrast stretch</strong></div>
+  <div class="ctrl">
+    <button class="btn" style="--ca:#00e5ff" onclick="numSolve(7,1)">Case 1: Identity</button>
+    <button class="btn" style="--ca:#ff3355" onclick="numSolve(7,2)">Case 2: Binary</button>
+    <button class="btn" style="--ca:#00ff88" onclick="numSolve(7,3)">Case 3: Full Stretch</button>
+    <button class="btn" style="--ca:#ff00c8" onclick="numPractice(7)">✏️ Custom Points</button>
+    <button class="btn" style="--ca:#ffe000" onclick="numReset(7)">↺ Reset</button>
+  </div>
+  <div id="n7-custom" style="display:none;" class="practice-box">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:.78rem;color:var(--g);margin-bottom:8px;">CUSTOM CONTROL POINTS (0–255):</div>
+    <div class="ctrl">
+      <span class="rl">r₁=</span><input type="number" id="n7-r1" value="50" min="0" max="255" class="num-input" style="width:55px;">
+      <span class="rl">s₁=</span><input type="number" id="n7-s1" value="0" min="0" max="255" class="num-input" style="width:55px;">
+      <span class="rl">r₂=</span><input type="number" id="n7-r2" value="200" min="0" max="255" class="num-input" style="width:55px;">
+      <span class="rl">s₂=</span><input type="number" id="n7-s2" value="255" min="0" max="255" class="num-input" style="width:55px;">
+      <button class="btn" style="--ca:#00ff88" onclick="numSolve(7,'custom')">PLOT</button>
+    </div>
+  </div>
+  <div class="cw"><canvas id="cv-n7" width="580" height="220"></canvas><div class="cl" id="cl-n7">PIECEWISE LINEAR TRANSFORM</div></div>
+  <div id="n7-steps" class="step-log"></div>
+</div>
+
+</div><!-- /s-num -->
 </div><!-- /root -->
 <div id="toast"></div>
 <div class="apop" id="apop"><div class="ai" id="ai">🏅</div><div class="at" id="at">UNLOCKED!</div><div class="as" id="as"></div><button class="ac" onclick="CA()">CLAIM ⚡</button></div>
@@ -369,7 +593,7 @@ function go(id,btn){
   init(id);
 }
 function init(id){
-  ({pipe:pipeInit,acq:acqInit,enh:enhInit,rest:restInit,col:colInit,comp:compInit,seg:segInit,recog:recogInit,lab:labInit,quiz:quizInit}[id]||function(){})();
+  ({pipe:pipeInit,acq:acqInit,enh:enhInit,rest:restInit,col:colInit,comp:compInit,seg:segInit,recog:recogInit,lab:labInit,quiz:quizInit,num:numInit}[id]||function(){})();
 }
 
 // ────────────────────────────────────────────
@@ -1063,13 +1287,564 @@ function showDone(){$('qb').style.display='none';$('qd').style.display='block';$
 function RQ(){qi=0;qs=0;qans=false;$('qb').style.display='block';$('qd').style.display='none';renderQ();}
 
 // ────────────────────────────────────────────
+// NUMERICALS
+// ────────────────────────────────────────────
+
+// ─── DATA ───
+const N_DATA = {
+  1: { // Log transform — from notes
+    matrix: [[0,1,2],[3,4,5],[6,7,8]],
+    c: 1,
+    fn: (r,c)=>parseFloat((c*Math.log10(1+r)).toFixed(3)),
+    label: r=>`log₁₀(1+${r})`,
+    colorFn: v=>v>0.7?'done':v>0.3?'active':'white'
+  },
+  2: { // Negative — fresh example
+    matrix: [[255,200,150],[100,128,75],[50,25,0]],
+    fn: (r)=>255-r,
+    label: r=>`255-${r}`,
+    colorFn: v=>v>200?'done':v>100?'active':'white'
+  },
+  3: { // Power law
+    matrix: [[0,64,128],[192,255,100],[50,150,200]],
+    gamma: 0.5,
+    fn: (r,_,g)=>Math.round(255*Math.pow(r/255, g||0.5)),
+    label: (r,g)=>`(${r}/255)^${g||0.5} × 255`,
+    colorFn: v=>v>200?'done':v>100?'active':'white'
+  },
+  4: { // Threshold — from notes style
+    matrix: [[2,0,1,7],[2,3,4,1],[1,3,2,1],[2,4,5,7],[1,7,7,7]],
+    k: 4,
+    fn: (r,_,k)=>r<=(k||4)?0:7,
+    label: (r,k)=>r<=(k||4)?`${r}≤${k||4}→0`:`${r}>${k||4}→7`,
+    colorFn: v=>v===0?'zero':'done'
+  },
+  5: { // Intensity level slicing — from notes
+    matrix: [[2,0,1,7],[2,3,4,1],[1,3,2,1],[2,4,5,7],[1,7,7,7]],
+    A:5, B:7, L:8,
+    colorFn: (v,a,b)=>v>=a&&v<=b?'hl':'zero'
+  },
+  6: { // Bit plane — from notes
+    matrix: [[2,0,1,7],[2,3,4,1],[1,3,2,1],[2,4,5,7]],
+    colorFn: v=>v?'done':'zero'
+  },
+  7: { // Contrast stretching
+    matrix: [[30,80,130],[170,200,220],[50,100,150]],
+    colorFn: v=>v>200?'done':v>100?'active':'white'
+  }
+};
+
+let nTimers = {};
+
+function numInit(){
+  // Initialize all matrices
+  [1,2,3,4,5,6].forEach(n=>{
+    renderMatrix(`n${n}-in`, N_DATA[n].matrix, null, 'in', n);
+    renderMatrix(`n${n}-out`, null, N_DATA[n].matrix, 'out', n);
+  });
+  renderBinaryMatrix('n6-binary', N_DATA[6].matrix);
+  drawNumCurves();
+  // Threshold range display
+  n4KChange(4);n3GammaChange(0.5);
+}
+
+function renderMatrix(id, data, emptyData, mode, n){
+  const el = $(id); if(!el) return;
+  const mx = data || emptyData;
+  const rows = mx.length, cols = mx[0].length;
+  el.style.gridTemplateColumns = `repeat(${cols}, 52px)`;
+  el.innerHTML = '';
+  mx.forEach((row, ri)=>{
+    row.forEach((val, ci)=>{
+      const cell = document.createElement('div');
+      cell.className = 'num-cell' + (mode==='out' ? ' zero' : '');
+      cell.id = `${id}-${ri}-${ci}`;
+      cell.innerHTML = `<span class="lbl">[${ri}][${ci}]</span><span class="val">${mode==='out' ? '?' : val}</span>`;
+      el.appendChild(cell);
+    });
+  });
+}
+
+function renderBinaryMatrix(id, matrix){
+  const el = $(id); if(!el) return;
+  const cols = matrix[0].length;
+  el.style.gridTemplateColumns = `repeat(${cols}, 72px)`;
+  el.innerHTML = '';
+  matrix.forEach((row,ri)=>row.forEach((val,ci)=>{
+    const cell = document.createElement('div');
+    cell.className = 'num-cell';
+    cell.id = `${id}-${ri}-${ci}`;
+    cell.innerHTML = `<span class="lbl">${val}</span><span class="val" style="font-size:.65rem;">${val.toString(2).padStart(8,'0')}</span>`;
+    el.appendChild(cell);
+  }));
+}
+
+function clearLog(n){ const el = $(`n${n}-steps`); if(el) el.innerHTML=''; }
+function addLog(n, text, cls=''){
+  const el=$(`n${n}-steps`); if(!el) return;
+  const d=document.createElement('div');
+  d.className='step-entry '+cls;d.textContent=text;el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function numSolve(n, extra){
+  gainXP(15, `Numerical N${n}`, null);
+  clearLog(n);
+  if(n===1) await solveLog();
+  else if(n===2) await solveNeg();
+  else if(n===3) await solvePower(parseFloat($('n3-gamma').value));
+  else if(n===4) await solveThresh(parseInt($('n4-k').value));
+  else if(n===5) await solveSlicing(extra||'no-bg', parseInt($('n5-a').value), parseInt($('n5-b').value));
+  else if(n===6) await solveBitPlane();
+  else if(n===7) await solveContrast(extra);
+}
+
+function numReset(n){
+  clearLog(n);
+  const d = N_DATA[n];
+  if(!d) return;
+  if(n<=4||n===6){
+    renderMatrix(`n${n}-in`, d.matrix, null, 'in', n);
+    if(n===6){ renderMatrix('n6-out'||`n6-in`, d.matrix, null, 'in', 6); renderBinaryMatrix('n6-binary', d.matrix); }
+    else renderMatrix(`n${n}-out`, null, d.matrix, 'out', n);
+  }
+  if(n===5){ renderMatrix('n5-in', d.matrix, null, 'in', 5); renderMatrix('n5-out', null, d.matrix, 'out', 5); }
+  if(n===7){ const c=$('cv-n7'); if(c){const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);drawN7Default(x,c.width,c.height);} }
+}
+
+function numPractice(n){
+  const el = $(`n${n}-practice`);
+  if(el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+  if(n===7){ const el7=$('n7-custom'); if(el7) el7.style.display=el7.style.display==='none'?'block':'none'; }
+}
+
+// ─── LOG TRANSFORM ───
+async function solveLog(matrix, c_val){
+  const mx = matrix || N_DATA[1].matrix;
+  const c = c_val || 1;
+  addLog(1, `━━ LOG TRANSFORMATION ━━ s = ${c}·log₁₀(1+r)`, 'heading');
+  addLog(1, `Given: c = ${c}`, 'formula');
+  addLog(1, `Formula: s = ${c} × log₁₀(1 + r)`, 'formula');
+  addLog(1, `Note: log₁₀ is used (base 10)`, 'note');
+  for(let ri=0;ri<mx.length;ri++){
+    for(let ci=0;ci<mx[ri].length;ci++){
+      const r=mx[ri][ci];
+      const s=parseFloat((c*Math.log10(1+r)).toFixed(3));
+      // highlight input
+      const inCell=$(`n1-in-${ri}-${ci}`);
+      if(inCell){inCell.classList.add('active');}
+      const outCell=$(`n1-out-${ri}-${ci}`);
+      if(outCell){outCell.innerHTML=`<span class="lbl">[${ri}][${ci}]</span><span class="val">?</span>`;}
+      addLog(1, `  s[${ri}][${ci}]: ${c}·log₁₀(1+${r}) = ${c}·log₁₀(${1+r}) = ${c}·${Math.log10(1+r).toFixed(4)}`, 'formula');
+      await delay(420);
+      if(outCell){outCell.innerHTML=`<span class="lbl">[${ri}][${ci}]</span><span class="val">${s}</span>`;outCell.className='num-cell done';}
+      if(inCell){inCell.classList.remove('active');inCell.classList.add('done');}
+      addLog(1, `  ✅ s[${ri}][${ci}] = ${s}`, 'result');
+      await delay(180);
+    }
+  }
+  addLog(1, ``, '');
+  addLog(1, `━━ FINAL OUTPUT MATRIX ━━`, 'heading');
+  addLog(1, `[ ${mx[0].map(r=>parseFloat((c*Math.log10(1+r)).toFixed(3))).join('\t ')} ]`, 'result');
+  addLog(1, `[ ${mx[1].map(r=>parseFloat((c*Math.log10(1+r)).toFixed(3))).join('\t ')} ]`, 'result');
+  addLog(1, `[ ${mx[2].map(r=>parseFloat((c*Math.log10(1+r)).toFixed(3))).join('\t ')} ]`, 'result');
+  addLog(1, `━━ From your notes: s = [0, 0.301, 0.477 / 0.602, 0.699, 0.778 / 0.845, 0.903, 0.954] ✅`, 'note');
+}
+
+// ─── NEGATIVE ───
+async function solveNeg(matrix){
+  const mx = matrix || N_DATA[2].matrix;
+  addLog(2, `━━ NEGATIVE TRANSFORM ━━ s = 255 - r`, 'heading');
+  addLog(2, `Formula: s = (L-1) - r = 255 - r (for 8-bit, L=256)`, 'formula');
+  for(let ri=0;ri<mx.length;ri++){
+    for(let ci=0;ci<mx[ri].length;ci++){
+      const r=mx[ri][ci],s=255-r;
+      const ic=$(`n2-in-${ri}-${ci}`),oc=$(`n2-out-${ri}-${ci}`);
+      if(ic) ic.classList.add('active');
+      addLog(2, `  s[${ri}][${ci}]: 255 - ${r} = ${s}`, 'formula');
+      await delay(400);
+      if(oc){oc.innerHTML=`<span class="lbl">[${ri}][${ci}]</span><span class="val">${s}</span>`;oc.className='num-cell done';}
+      if(ic){ic.classList.remove('active');ic.classList.add('done');}
+      addLog(2, `  ✅ s = ${s} (bright→dark: ${r>127?'dark':'bright'} in output)`, 'result');
+      await delay(200);
+    }
+  }
+  drawN2Curve();
+  addLog(2, `━━ DONE! Dark↔Bright values swapped. ━━`, 'heading');
+}
+
+// ─── POWER LAW ───
+async function solvePower(gamma){
+  const mx = N_DATA[3].matrix;
+  const g = gamma||0.5;
+  addLog(3, `━━ POWER LAW TRANSFORM ━━ s = r^γ × 255`, 'heading');
+  addLog(3, `Given: γ = ${g}, c = 1`, 'formula');
+  addLog(3, `Formula: s = (r/255)^${g} × 255`, 'formula');
+  addLog(3, g<1?'γ < 1 → BRIGHTENS the image (dark pixels get lighter)':'γ > 1 → DARKENS the image (bright pixels get darker)', 'note');
+  for(let ri=0;ri<mx.length;ri++){
+    for(let ci=0;ci<mx[ri].length;ci++){
+      const r=mx[ri][ci];
+      const s=Math.round(255*Math.pow(r/255,g));
+      const ic=$(`n3-in-${ri}-${ci}`),oc=$(`n3-out-${ri}-${ci}`);
+      if(ic) ic.classList.add('active');
+      addLog(3, `  s[${ri}][${ci}]: (${r}/255)^${g} × 255 = ${(r/255).toFixed(3)}^${g} × 255 = ${(Math.pow(r/255,g)).toFixed(4)} × 255`, 'formula');
+      await delay(380);
+      if(oc){oc.innerHTML=`<span class="lbl">[${ri}][${ci}]</span><span class="val">${s}</span>`;oc.className='num-cell done';}
+      if(ic){ic.classList.remove('active');ic.classList.add('done');}
+      addLog(3, `  ✅ s = ${s}`, 'result');
+      await delay(180);
+    }
+  }
+  addLog(3, `━━ POWER LAW COMPLETE ━━`, 'heading');
+}
+
+// ─── THRESHOLD ───
+async function solveThresh(k){
+  const mx = N_DATA[4].matrix;
+  const K = k!==undefined?k:4;
+  const L = 8;
+  addLog(4, `━━ THRESHOLD TRANSFORM ━━ K = ${K}, L = ${L}`, 'heading');
+  addLog(4, `s = 0 if r ≤ ${K}  |  s = ${L-1} if r > ${K}`, 'formula');
+  for(let ri=0;ri<mx.length;ri++){
+    for(let ci=0;ci<mx[ri].length;ci++){
+      const r=mx[ri][ci],s=r<=K?0:(L-1);
+      const ic=$(`n4-in-${ri}-${ci}`),oc=$(`n4-out-${ri}-${ci}`);
+      if(ic) ic.classList.add('active');
+      addLog(4, `  s[${ri}][${ci}]: r=${r} ${r<=K?`≤${K} → 0 (BLACK)`:`>${K} → ${L-1} (WHITE)`}`, 'formula');
+      await delay(350);
+      if(oc){oc.innerHTML=`<span class="lbl">[${ri}][${ci}]</span><span class="val">${s}</span>`;oc.className='num-cell '+(s===0?'zero':'done');}
+      if(ic){ic.classList.remove('active');ic.classList.add('done');}
+      addLog(4, `  ✅ s = ${s}`, 'result');
+      await delay(150);
+    }
+  }
+  addLog(4, `━━ BINARY IMAGE CREATED ━━`, 'heading');
+  addLog(4, `Black pixels (0): r ≤ ${K}  |  White pixels (${L-1}): r > ${K}`, 'note');
+}
+
+// ─── INTENSITY LEVEL SLICING ───
+async function solveSlicing(mode, A, B){
+  const mx = N_DATA[5].matrix;
+  const a=A!==undefined?A:5, b=B!==undefined?B:7, L=8;
+  clearLog(5);
+  addLog(5, `━━ INTENSITY LEVEL SLICING ━━`, 'heading');
+  addLog(5, `Region: [${a}, ${b}]  |  L = ${L}  |  Mode: ${mode==='no-bg'?'Without Background':'With Background'}`, 'formula');
+  addLog(5, mode==='no-bg'?`s = L-1 if ${a} ≤ r ≤ ${b},  else s = 0`:`s = L-1 if ${a} ≤ r ≤ ${b},  else s = r (preserve)`, 'formula');
+
+  // Reset output
+  renderMatrix('n5-out', null, mx, 'out', 5);
+
+  for(let ri=0;ri<mx.length;ri++){
+    for(let ci=0;ci<mx[ri].length;ci++){
+      const r=mx[ri][ci];
+      const inRegion = r>=a && r<=b;
+      const s = inRegion ? (L-1) : (mode==='no-bg'?0:r);
+      const ic=$(`n5-in-${ri}-${ci}`),oc=$(`n5-out-${ri}-${ci}`);
+      if(ic) ic.classList.add('active');
+      addLog(5, `  [${ri}][${ci}]: r=${r} ${inRegion?`→ IN REGION [${a}-${b}] → ${L-1} ⭐`:`→ outside → ${s}`}`, inRegion?'result':'formula');
+      await delay(300);
+      if(oc){oc.innerHTML=`<span class="lbl">[${ri}][${ci}]</span><span class="val">${s}</span>`;oc.className='num-cell '+(inRegion?'hl':mode==='no-bg'?'zero':'active');}
+      if(ic){ic.classList.remove('active');ic.classList.add(inRegion?'hl':'done');}
+      await delay(120);
+    }
+  }
+  drawN5Curve(a,b,mode);
+  addLog(5, `━━ SLICING COMPLETE ━━ Highlighted region ${a}–${b}`, 'heading');
+}
+
+// ─── BIT PLANE ───
+async function solveBitPlane(){
+  const mx = N_DATA[6].matrix;
+  addLog(6, `━━ BIT PLANE SLICING ━━ L=256, K=8 bits`, 'heading');
+  addLog(6, `Each pixel value (0–255) is represented as 8 binary bits`, 'formula');
+  addLog(6, `Format: b₇b₆b₅b₄b₃b₂b₁b₀  (MSB → LSB)`, 'formula');
+  // Show binary
+  for(let ri=0;ri<mx.length;ri++){
+    for(let ci=0;ci<mx[ri].length;ci++){
+      const v=mx[ri][ci];
+      const bin=v.toString(2).padStart(8,'0');
+      const ic=$(`n6-in-${ri}-${ci}`);
+      if(ic) ic.classList.add('active');
+      addLog(6, `  [${ri}][${ci}]: ${v} → binary: ${bin}  (MSB=${bin[0]}, LSB=${bin[7]})`, 'formula');
+      const bc=$(`n6-binary-${ri}-${ci}`);
+      if(bc){bc.innerHTML=`<span class="lbl">${v}</span><span class="val" style="font-size:.65rem;letter-spacing:1px;">${bin}</span>`;bc.className='num-cell done';}
+      await delay(350);
+      if(ic){ic.classList.remove('active');ic.classList.add('done');}
+    }
+  }
+  addLog(6, `━━ Bit Planes: MSB(7) has MOST info | LSB(0) has LEAST ━━`, 'heading');
+  addLog(6, `MSB (Plane 7) → Contains most significant image structure`, 'result');
+  addLog(6, `LSB (Plane 0) → Contains fine noise, least important`, 'note');
+  drawN6BitPlanes(mx, 7);
+}
+
+async function numSolvePlane(n, plane){
+  const mx = N_DATA[6].matrix;
+  clearLog(6);
+  addLog(6, `━━ BIT PLANE ${plane} (${plane===7?'MSB — most info':plane===0?'LSB — least info':'Mid plane'}) ━━`, 'heading');
+  addLog(6, `Extract bit at position ${plane} from each pixel`, 'formula');
+  addLog(6, `Method: (pixel >> ${plane}) & 1`, 'formula');
+  for(let ri=0;ri<mx.length;ri++){
+    for(let ci=0;ci<mx[ri].length;ci++){
+      const v=mx[ri][ci];
+      const bit=(v>>plane)&1;
+      const bin=v.toString(2).padStart(8,'0');
+      addLog(6, `  ${v} = ${bin} → bit[${plane}] = ${bin[7-plane]} = ${bit}`, bit?'result':'formula');
+      await delay(280);
+    }
+  }
+  drawN6BitPlanes(mx, plane);
+  addLog(6, `━━ PLANE ${plane} EXTRACTED ━━ ${plane>4?'High info plane':'Low info plane'}`, 'heading');
+}
+
+// ─── CONTRAST STRETCHING ───
+async function solveContrast(caseNum){
+  clearLog(7);
+  const c=$('cv-n7'), x=c?c.getContext('2d'):null; if(!x)return;
+  const w=c.width,h=c.height;
+  x.clearRect(0,0,w,h); x.fillStyle='#030310'; x.fillRect(0,0,w,h);
+
+  if(caseNum===1||caseNum==='1'){
+    addLog(7, `━━ CASE 1: r₁=r₂, s₁=s₂ → IDENTITY ━━`, 'heading');
+    addLog(7, `When r₁=r₂ and s₁=s₂: the function becomes a straight line`, 'formula');
+    addLog(7, `s = r for all values → No contrast change → Identity transform`, 'note');
+    drawCS(x,w,h,[[0,0],[255,255]],'#00e5ff','CASE 1: IDENTITY (r₁=r₂, s₁=s₂ → straight line)');
+    addLog(7, `Result: Output = Input unchanged. This is the identity curve.`, 'result');
+    $('cl-n7').textContent='CASE 1: IDENTITY TRANSFORM';
+  } else if(caseNum===2||caseNum==='2'){
+    addLog(7, `━━ CASE 2: r₁=r₂, s₁=0, s₂=L-1 → BINARY IMAGE ━━`, 'heading');
+    addLog(7, `r₁ = r₂ = threshold point`, 'formula');
+    addLog(7, `s₁ = 0 (below threshold → BLACK)`, 'formula');
+    addLog(7, `s₂ = L-1 = 255 (above threshold → WHITE)`, 'formula');
+    addLog(7, `→ Creates a BINARY IMAGE — same as threshold transform!`, 'result');
+    drawCS(x,w,h,[[0,0],[127,0],[128,255],[255,255]],'#ff3355','CASE 2: BINARY (r₁=r₂, s₁=0, s₂=L-1 → threshold)');
+    $('cl-n7').textContent='CASE 2: BINARY IMAGE';
+  } else if(caseNum===3||caseNum==='3'){
+    addLog(7, `━━ CASE 3: r₁=rmin, r₂=rmax → FULL STRETCH ━━`, 'heading');
+    addLog(7, `r₁ = rmin (minimum intensity in image)`, 'formula');
+    addLog(7, `r₂ = rmax (maximum intensity in image)`, 'formula');
+    addLog(7, `s₁ = 0, s₂ = L-1 = 255`, 'formula');
+    addLog(7, `Formula: s = (r - rmin) / (rmax - rmin) × 255`, 'result');
+    addLog(7, `→ Stretches full range to [0, 255] — maximum contrast!`, 'result');
+    drawCS(x,w,h,[[0,0],[50,0],[200,255],[255,255]],'#00ff88','CASE 3: FULL CONTRAST STRETCH (rmin→0, rmax→255)');
+    $('cl-n7').textContent='CASE 3: FULL CONTRAST STRETCH';
+  } else if(caseNum==='custom'){
+    const r1=parseInt($('n7-r1').value),s1=parseInt($('n7-s1').value);
+    const r2=parseInt($('n7-r2').value),s2=parseInt($('n7-s2').value);
+    addLog(7, `━━ CUSTOM CONTRAST STRETCH ━━`, 'heading');
+    addLog(7, `Control points: (r₁=${r1}, s₁=${s1}) and (r₂=${r2}, s₂=${s2})`, 'formula');
+    addLog(7, `Segment 1 [0→r₁]: slope = ${(s1/Math.max(1,r1)).toFixed(3)}`, 'formula');
+    addLog(7, `Segment 2 [r₁→r₂]: slope = ${((s2-s1)/Math.max(1,r2-r1)).toFixed(3)}`, 'formula');
+    addLog(7, `Segment 3 [r₂→255]: slope = ${((255-s2)/Math.max(1,255-r2)).toFixed(3)}`, 'formula');
+    drawCS(x,w,h,[[0,0],[r1,s1],[r2,s2],[255,255]],'#ff00c8',`CUSTOM: (${r1},${s1}) → (${r2},${s2})`);
+    $('cl-n7').textContent=`CUSTOM: (${r1},${s1}) to (${r2},${s2})`;
+  }
+}
+
+function drawCS(x, w, h, pts, col, title){
+  x.clearRect(0,0,w,h); x.fillStyle='#030310'; x.fillRect(0,0,w,h);
+  const pad=44;
+  // Grid
+  x.strokeStyle='#0d0d24'; x.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const gx=pad+i*(w-pad-12)/4, gy=10+i*(h-pad-10)/4;
+    x.beginPath(); x.moveTo(gx,10); x.lineTo(gx,h-pad); x.stroke();
+    x.beginPath(); x.moveTo(pad,gy); x.lineTo(w-12,gy); x.stroke();
+  }
+  // Axes
+  x.strokeStyle='#222244'; x.lineWidth=2;
+  x.beginPath(); x.moveTo(pad,h-pad); x.lineTo(w-12,h-pad); x.stroke();
+  x.beginPath(); x.moveTo(pad,h-pad); x.lineTo(pad,10); x.stroke();
+  x.fillStyle='#3a4060'; x.font='9px Share Tech Mono';
+  x.fillText('0',pad-10,h-pad+4); x.fillText('255',w-20,h-pad+4);
+  x.fillText('r',w-10,h-pad); x.fillText('s',28,14);
+  // Diagonal reference
+  x.setLineDash([3,6]); x.strokeStyle='#1a1a3a'; x.lineWidth=1;
+  x.beginPath(); x.moveTo(pad,h-pad); x.lineTo(w-12,10); x.stroke(); x.setLineDash([]);
+  // Animate the piecewise curve
+  const toCanvasX = r => pad + (r/255)*(w-pad-12);
+  const toCanvasY = s => (h-pad) - (s/255)*(h-pad-10);
+  // Control point markers
+  pts.forEach((p,i)=>{
+    if(i===0||i===pts.length-1)return;
+    const px=toCanvasX(p[0]),py=toCanvasY(p[1]);
+    x.beginPath(); x.arc(px,py,5,0,Math.PI*2); x.fillStyle=col; x.shadowBlur=10; x.shadowColor=col; x.fill(); x.shadowBlur=0;
+    x.fillStyle=col; x.font='9px Share Tech Mono'; x.fillText(`(${p[0]},${p[1]})`,px+7,py-4);
+  });
+  // Draw curve animated
+  let step=0;
+  (function drawStep(){
+    step=Math.min(255,step+4);
+    // Evaluate piecewise at step
+    x.strokeStyle=col; x.lineWidth=3; x.shadowBlur=12; x.shadowColor=col;
+    x.beginPath();
+    for(let r=0;r<=step;r++){
+      let s=0;
+      for(let i=0;i<pts.length-1;i++){
+        const r0=pts[i][0],s0=pts[i][1],r1=pts[i+1][0],s1=pts[i+1][1];
+        if(r>=r0&&r<=r1){s=s0+(s1-s0)*(r-r0)/Math.max(1,r1-r0);break;}
+        if(r>pts[pts.length-1][0]){s=pts[pts.length-1][1];}
+      }
+      const px=toCanvasX(r),py=toCanvasY(s);
+      r===0?x.moveTo(px,py):x.lineTo(px,py);
+    }
+    x.stroke(); x.shadowBlur=0;
+    if(step<255)requestAnimationFrame(drawStep);
+  })();
+  x.fillStyle=col; x.font='bold 10px Orbitron'; x.textAlign='center'; x.fillText(title,w/2,h-8); x.textAlign='left';
+}
+
+// ─── CUSTOM SOLVE ───
+async function numCustomSolve(n){
+  const parseRow = id => ($( id )?.value||'').trim().split(/\s+/).map(Number).filter(v=>!isNaN(v));
+  if(n===1){
+    const r0=parseRow('n1-r0'),r1=parseRow('n1-r1'),r2=parseRow('n1-r2');
+    if(!r0.length||!r1.length||!r2.length){addLog(1,'❌ Please fill in all 3 rows','note');return;}
+    const mx=[r0,r1,r2], c=parseFloat($('n1-c').value)||1;
+    N_DATA[1].matrix=mx; N_DATA[1].c=c;
+    renderMatrix('n1-in',mx,null,'in',1); renderMatrix('n1-out',null,mx,'out',1);
+    clearLog(1); await solveLog(mx,c);
+  } else if(n===2){
+    const r0=parseRow('n2-r0'),r1=parseRow('n2-r1'),r2=parseRow('n2-r2');
+    if(!r0.length){addLog(2,'❌ Enter matrix rows','note');return;}
+    const mx=[r0,r1,r2]; N_DATA[2].matrix=mx;
+    renderMatrix('n2-in',mx,null,'in',2); renderMatrix('n2-out',null,mx,'out',2);
+    clearLog(2); await solveNeg(mx);
+  } else if(n===3){
+    const r0=parseRow('n3-r0'),r1=parseRow('n3-r1'),r2=parseRow('n3-r2');
+    if(!r0.length){addLog(3,'❌ Enter matrix rows','note');return;}
+    const mx=[r0,r1,r2],g=parseFloat($('n3-cg').value)||0.5;
+    N_DATA[3].matrix=mx;
+    renderMatrix('n3-in',mx,null,'in',3); renderMatrix('n3-out',null,mx,'out',3);
+    clearLog(3); await solvePower(g);
+  } else if(n===4){
+    const r0=parseRow('n4-r0'),r1=parseRow('n4-r1'),r2=parseRow('n4-r2');
+    if(!r0.length){addLog(4,'❌ Enter matrix rows','note');return;}
+    const mx=[r0,r1,r2],k=parseInt($('n4-ck').value)||4;
+    N_DATA[4].matrix=mx;
+    renderMatrix('n4-in',mx,null,'in',4); renderMatrix('n4-out',null,mx,'out',4);
+    clearLog(4); await solveThresh(k);
+  }
+}
+
+// ─── SLIDER UPDATES ───
+function n3GammaChange(v){
+  $('n3-gv').textContent=parseFloat(v).toFixed(1);
+  $('n3-effect').textContent=v<1?'BRIGHTENS (γ<1)':v>1?'DARKENS (γ>1)':'IDENTITY (γ=1)';
+  $('n3-effect').style.color=v<1?'var(--g)':v>1?'var(--r)':'var(--c)';
+  drawN3Curve(parseFloat(v));
+}
+function n4KChange(v){
+  $('n4-kv').textContent=v;
+  drawN4Curve(parseInt(v));
+}
+
+// ─── CURVE DRAWING ───
+function drawNumCurves(){
+  drawN1Curve(); drawN2Curve(); drawN3Curve(0.5); drawN4Curve(4); drawN5Curve(5,7,'no-bg'); drawN6BitPlanes(N_DATA[6].matrix,7); drawN7Default(null,null,null);
+}
+
+function miniCurve(canvasId, pts, col, label){
+  const c=$(canvasId), x=c?c.getContext('2d'):null; if(!x)return;
+  const w=c.width,h=c.height;
+  x.clearRect(0,0,w,h); x.fillStyle='#030310'; x.fillRect(0,0,w,h);
+  x.strokeStyle='#0d0d24'; x.lineWidth=1;
+  x.beginPath(); x.moveTo(36,h-22); x.lineTo(w-10,h-22); x.stroke();
+  x.beginPath(); x.moveTo(36,h-22); x.lineTo(36,8); x.stroke();
+  x.strokeStyle=col; x.lineWidth=2.5; x.shadowBlur=10; x.shadowColor=col;
+  x.beginPath();
+  pts.forEach((p,i)=>{
+    const px=36+(p[0]/255)*(w-50), py=(h-22)-(p[1]/255)*(h-32);
+    i===0?x.moveTo(px,py):x.lineTo(px,py);
+  });
+  x.stroke(); x.shadowBlur=0;
+  x.fillStyle=col; x.font='9px Share Tech Mono'; x.textAlign='center'; x.fillText(label,w/2,h-4); x.textAlign='left';
+  x.fillStyle='#3a4060'; x.font='9px Share Tech Mono'; x.fillText('r',w-10,h-22); x.fillText('s',28,12);
+}
+
+function drawN1Curve(){ const pts=Array.from({length:256},(_,r)=>([r,Math.min(255,Math.round(45*Math.log10(1+r)*255/Math.log10(256)))])); miniCurve('cv-n1',pts,'#00ff88','s = log₁₀(1+r)'); }
+function drawN2Curve(){ miniCurve('cv-n2',[[0,255],[255,0]],'#ff3355','s = 255 - r (NEGATIVE)'); }
+function drawN3Curve(g){ const pts=Array.from({length:256},(_,r)=>([r,Math.round(255*Math.pow(r/255,g))])); miniCurve('cv-n3',pts,'#ff9500',`s = r^${g} (gamma=${g})`); $('cl-n3').textContent=`POWER LAW γ=${g}`; }
+function drawN4Curve(k){ miniCurve('cv-n4',[[0,0],[k,0],[k+1,7],[255,7]],'#ffe000',`s=0 if r≤${k}, s=7 if r>${k}`); }
+
+function drawN5Curve(a,b,mode){
+  const c=$('cv-n5'),x=c?c.getContext('2d'):null; if(!x)return;
+  const w=c.width,h=c.height;
+  x.clearRect(0,0,w,h); x.fillStyle='#030310'; x.fillRect(0,0,w,h);
+  x.strokeStyle='#141432'; x.lineWidth=1;
+  x.beginPath(); x.moveTo(36,h-18); x.lineTo(w-10,h-18); x.stroke();
+  x.beginPath(); x.moveTo(36,h-18); x.lineTo(36,8); x.stroke();
+  const sx=r=>36+(r/7)*(w-50), sy=s=>(h-18)-(s/7)*(h-30);
+  // No-bg line
+  x.strokeStyle='#ff00c8'; x.lineWidth=2; x.shadowBlur=8; x.shadowColor='#ff00c8';
+  x.beginPath();
+  for(let r=0;r<=7;r++){
+    const s=r>=a&&r<=b?7:0;
+    r===0?x.moveTo(sx(r),sy(s)):x.lineTo(sx(r),sy(s));
+  }
+  x.stroke(); x.shadowBlur=0;
+  // Highlight region
+  x.fillStyle='rgba(255,0,200,.12)';
+  x.fillRect(sx(a),8,sx(b)-sx(a),h-26);
+  x.strokeStyle='#ffe000'; x.lineWidth=1; x.setLineDash([3,4]);
+  x.beginPath(); x.moveTo(sx(a),8); x.lineTo(sx(a),h-18); x.stroke();
+  x.beginPath(); x.moveTo(sx(b),8); x.lineTo(sx(b),h-18); x.stroke();
+  x.setLineDash([]);
+  x.fillStyle='#ffe000'; x.font='9px Share Tech Mono'; x.fillText(`A=${a}`,sx(a)-8,h-4); x.fillText(`B=${b}`,sx(b)-8,h-4);
+  x.fillStyle='#ff00c8'; x.font='9px Share Tech Mono'; x.textAlign='center'; x.fillText('REGION → MAX INTENSITY',w/2,12); x.textAlign='left';
+}
+
+function drawN6BitPlanes(mx, plane){
+  const c=$('cv-n6'),x=c?c.getContext('2d'):null; if(!x)return;
+  const w=c.width,h=c.height;
+  x.clearRect(0,0,w,h); x.fillStyle='#030310'; x.fillRect(0,0,w,h);
+  // Draw 8 bit planes as stacked bars
+  const planeW=(w-20)/8, barH=(h-30)/2;
+  const planeCols=['#ff3355','#ff6600','#ff9500','#ffe000','#00ff88','#00cccc','#00e5ff','#ff00c8'];
+  for(let p=0;p<8;p++){
+    const bx=10+p*planeW, isSelected=(p===plane);
+    x.fillStyle=planeCols[p]+(isSelected?'':'44');
+    x.fillRect(bx+2, (h-30)/2, planeW-4, barH);
+    if(isSelected){x.shadowBlur=14;x.shadowColor=planeCols[p];}
+    x.strokeStyle=planeCols[p]; x.lineWidth=isSelected?2.5:1; x.strokeRect(bx+2,(h-30)/2,planeW-4,barH); x.shadowBlur=0;
+    x.fillStyle=planeCols[p]; x.font=isSelected?'bold 9px Orbitron':'8px Share Tech Mono'; x.textAlign='center';
+    x.fillText(`B${p}`,bx+planeW/2,h-5);
+    x.fillText(p===7?'MSB':p===0?'LSB':'',bx+planeW/2,h-16);
+    // show bits from matrix
+    let total1=0; mx.forEach(row=>row.forEach(v=>{if((v>>p)&1)total1++;}));
+    const info=total1/(mx.length*mx[0].length);
+    x.fillStyle=planeCols[p]+(isSelected?'':' 88'); x.textAlign='center';
+    x.fillRect(bx+4,barH/2,planeW-8,info*barH*.8);
+  }
+  x.textAlign='left';
+  const col=planeCols[plane]||'#00e5ff';
+  x.fillStyle=col; x.font='bold 10px Orbitron'; x.textAlign='center';
+  x.fillText(`BIT PLANE ${plane} — ${plane===7?'MSB: HIGHEST INFO':plane===0?'LSB: LOWEST INFO':`MID PLANE ${plane}`}`,w/2,14); x.textAlign='left';
+  $('cl-n6').textContent=`BIT PLANE ${plane} ${plane===7?'(MSB — most info)':plane===0?'(LSB — least info)':''}`;
+}
+
+function drawN7Default(x2, w2, h2){
+  const c=$('cv-n7'), x=x2||(c?c.getContext('2d'):null); if(!x)return;
+  const w=w2||(c?c.width:580), h=h2||(c?c.height:220);
+  x.clearRect(0,0,w,h); x.fillStyle='#030310'; x.fillRect(0,0,w,h);
+  x.strokeStyle='#141432'; x.lineWidth=1;
+  for(let i=0;i<=4;i++){const gx=44+i*(w-58)/4,gy=12+i*(h-46)/4;x.beginPath();x.moveTo(gx,12);x.lineTo(gx,h-34);x.stroke();x.beginPath();x.moveTo(44,gy);x.lineTo(w-10,gy);x.stroke();}
+  x.strokeStyle='#222244';x.lineWidth=2;x.beginPath();x.moveTo(44,h-34);x.lineTo(w-10,h-34);x.stroke();x.beginPath();x.moveTo(44,h-34);x.lineTo(44,12);x.stroke();
+  x.fillStyle='#3a4060';x.font='9px Share Tech Mono';x.fillText('0',32,h-32);x.fillText('255',w-20,h-32);x.fillText('r',w-10,h-32);x.fillText('s',30,14);
+  x.setLineDash([3,5]);x.strokeStyle='#1a1a3a';x.lineWidth=1;x.beginPath();x.moveTo(44,h-34);x.lineTo(w-10,12);x.stroke();x.setLineDash([]);
+  x.fillStyle='#3a4060';x.font='10px Share Tech Mono';x.textAlign='center';x.fillText('SELECT A CASE TO PLOT',w/2,h/2);x.textAlign='left';
+}
+
+// ────────────────────────────────────────────
 // BOOT
 // ────────────────────────────────────────────
 window.addEventListener('load',()=>{
   pipeInit();quizInit();
   setTimeout(()=>toast('🎮 Welcome to DIP Quest! Explore every tab!'),500);
   setTimeout(()=>toast('💡 Tap buttons inside sections to trigger animations!'),2000);
-  setTimeout(()=>toast('🔥 Earn XP streaks — explore everything!'),3600);
+  setTimeout(()=>toast('🔥 NEW: Numericals tab — solve problems step by step!'),3600);
 });
 </script>
 </body>
